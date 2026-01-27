@@ -8,3 +8,8 @@
 /001ReAct/tools/__pycache__
 /002_PlanAndSolve/__pycache__
 /003Reflection/__pycache__
+/agents/agents.egg-info
+/agents/build
+/agents/agent/__pycache__
+/agents/core/__pycache__
+/agents/tools/__pycache__

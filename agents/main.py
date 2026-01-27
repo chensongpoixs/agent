@@ -3,8 +3,8 @@
 
 # my_main.py
 from dotenv import load_dotenv
-from core.llm import LlmClient    # 注意:这里导入我们自己的类
-
+from agents.core.llm_client import LlmClient    # 注意:这里导入我们自己的类
+ 
 
 
 # from agents import create_calculator_registry
@@ -17,7 +17,7 @@ load_dotenv()
 def test_swiatch_provider():
     
     # 实例化我们重写的客户端，并指定provider
-    llm = LlmClient(provider="modelscope1") 
+    llm = LlmClient(provider="llama.cpp") 
     # llm = LLM(provider="modelscope1") # 也可以这样指定
 
     # 准备消息
@@ -92,3 +92,7 @@ def test_swiatch_provider():
 # if __name__ == "__main__":
 #     test_calculator_tool()
 #     test_with_simple_agent()
+
+
+if __name__ == "__main__":
+    test_swiatch_provider()

@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Any
 from .message import Message
-from .llm import LlmClient
+from .llm_client import LlmClient
 from .config import Config
 
 class Agent(ABC):

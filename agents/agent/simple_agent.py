@@ -129,14 +129,14 @@ class SimpleAgent(Agent):
     @author: chensong
     执行工具调用
     """
-    def _execute_tool_call(self, tool_name: str, parameters: str) -> str:
-        if not self.tool_registry:
-            return f"❌ 错误:未配置工具注册表";
-        try:
-            # 智能参数解析
-            if tool_name == 'calculator':
-                # 计算器工具之间转入表达式
-                result = self.tool_registry.ex
+    # def _execute_tool_call(self, tool_name: str, parameters: str) -> str:
+    #     if not self.tool_registry:
+    #         return f"❌ 错误:未配置工具注册表";
+    #     try:
+    #         # 智能参数解析
+    #         if tool_name == 'calculator':
+    #             # 计算器工具之间转入表达式
+    #             result = self.tool_registry.ex
 
 
 

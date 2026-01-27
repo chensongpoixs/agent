@@ -5,26 +5,27 @@
 """
 
 # 配置第三方库的日志级别，减少噪音
-from .version import __version__, __author__, __email__, __description__
+from agents.version import __version__, __author__, __email__, __description__
 
+from . import main
 # 核心组件
-from .core.llm import LlmClient
-from .core.config import Config
-from .core.message import Message
-from .core.exceptions import AgentsException
+from agents.core.llm_client import LlmClient
+from agents.core.config import Config
+from agents.core.message import Message
+from agents.core.exceptions import AgentsException
 
 # Agent实现
-from .agent.simple_agent import SimpleAgent
+from agents.agent.simple_agent import SimpleAgent
 # from .agent.react_agent import ReActAgent
 # from .agent.reflection_agent import ReflectionAgent
 # from .agent.plan_solve_agent import PlanAndSolveAgent
 
 # 工具系统
-from .tools.registry import ToolRegistry, global_registry
-from .tools.builtin.search import SearchTool, search
-from .tools.builtin.calculator import CalculatorTool, calculate
-from .tools.chain import ToolChain, ToolChainManager
-from .tools.async_executor import AsyncToolExecutor
+from agents.tools.registry import ToolRegistry, global_registry
+from agents.tools.builtin.search import SearchTool, search
+from agents.tools.builtin.calculator import CalculatorTool, calculate
+from agents.tools.chain import ToolChain, ToolChainManager
+from agents.tools.async_executor import AsyncToolExecutor
 
 __all__ = [
     # 版本信息

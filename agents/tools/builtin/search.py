@@ -1,10 +1,10 @@
-"""搜索工具 - HelloAgents原生搜索实现"""
+"""搜索工具 - Agents原生搜索实现"""
 
 import os
 from typing import Optional, Dict, Any, List
 
 from ..base import Tool, ToolParameter
-from ...core.exceptions import HelloAgentsException
+from ...core.exceptions import AgentsException
 
 class SearchTool(Tool):
     """

@@ -1,5 +1,5 @@
 ###############
-
+"""ReAct Agent实现 - 推理与行动结合的智能体"""
 import re
 from typing import Optional, List, Tuple
 # from agents import ReActAgent, LlmClient, Config, Message, ToolRegistry
@@ -159,6 +159,12 @@ class ReActAgent(Agent):
     
         print("⏰ 已达到最大步数，流程终止。")
         final_answer = "抱歉，我无法在限定步数内完成这个任务。"
+
+        # 保存到历史记录
+        self.add_message(Message(input_text, "user"));
+        self.add_message(Message(final_answer, "assistant"));
+    
+        return final_answer;
                 
 
 

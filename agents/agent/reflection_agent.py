@@ -1,5 +1,20 @@
 
-"""Reflection Agent实现 - 自我反思与迭代优化的智能体"""
+"""
+Reflection Agent实现 - 自我反思与迭代优化的智能体
+
+
+
+
+1. what?
+
+
+2. 根据回答内容找出可能出问题地方
+
+3. 根据反馈意见修改回答
+
+
+
+"""
 
 from typing import Optional, List, Dict, Any
 from ..core.agent import Agent

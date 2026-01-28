@@ -11,6 +11,7 @@ from agents.tools.async_executor import AsyncToolExecutor
 from agents.tools.builtin.calculator import CalculatorTool
 from agents.agent.react_agent import ReActAgent
 from agents.agent.reflection_agent import ReflectionAgent
+from agents.agent.plan_solve_agent import PlanAndSolveAgent
 # from agents import create_calculator_registry
 
 # 加载环境变量
@@ -179,7 +180,26 @@ def test_reflection_agent():
     result = general_agent.run("写一篇关于人工智能发展历程的简短文章")
     print(f"最终结果:{result}");
 
+
+def test_plan_solve_agent():
+
+    # 1. create LLM Client
+    llm = LlmClient(provider="llama.cpp");
+    
+    # 2. 创建自定义 PlanAndSolveAgent
+    agent = PlanAndSolveAgent(name="我的规划执行助手", llm=llm);
+
+    # 3. 测试复杂问题
+    question = "一个水果店周一卖出了15个苹果。周二卖出的苹果数量是周一的两倍。周三卖出的数量比周二少了5个。请问这三天总共卖出了多少个苹果？";
+    result = agent.run(question)
+    print(f"\n最终结果: {result}")
+
+    # 查看对话历史
+    print(f"对话历史: {len(agent.get_history())} 条消息")
+
+
 if __name__ == "__main__":
     #test_swiatch_provider()
     # test_simaple_agent()
-    test_reflection_agent()
+    #test_reflection_agent()
+    test_plan_solve_agent()

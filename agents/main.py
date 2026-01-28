@@ -12,6 +12,10 @@ from agents.tools.builtin.calculator import CalculatorTool
 from agents.agent.react_agent import ReActAgent
 from agents.agent.reflection_agent import ReflectionAgent
 from agents.agent.plan_solve_agent import PlanAndSolveAgent
+from agents.tools.builtin.memory_tool import MemoryTool
+from agents.tools.builtin.rag_tool import RAGTool
+
+
 # from agents import create_calculator_registry
 
 # 加载环境变量
@@ -198,8 +202,58 @@ def test_plan_solve_agent():
     print(f"对话历史: {len(agent.get_history())} 条消息")
 
 
+
+def test_memory_agent():
+
+    # 1. create LLM Client
+    # llm = LlmClient(provider="llama.cpp");
+    agent = SimpleAgent(name="学习助手", llm=LlmClient(provider="llama.cpp"));
+
+    # 第一次对话
+    response1 = agent.run("我叫张三, 正在学习Python, 目前掌握了基础语法");
+    print(response1)  # "很好！Python基础语法是编程的重要基础..."
+
+    # 第二次对话 (新的会话)
+    response2 = agent.run("你还记得我的学习进度吗？")
+
+    print(response2)  # "抱歉，我不知道您的学习进度..."
+
+
+
+def  test_memory_rag():
+    print(__name__);
+    # 创建LLM实例
+    llm = LlmClient("llama.cpp")
+
+    # 创建Agent
+    agent = SimpleAgent(
+        name="智能助手",
+        llm=llm,
+        system_prompt="你是一个有记忆和知识检索能力的AI助手"
+    )
+
+    # 创建工具注册表
+    tool_registry = ToolRegistry()
+
+    # 添加记忆工具
+    memory_tool = MemoryTool(user_id="user123")
+    tool_registry.register_tool(memory_tool)
+
+    # 添加RAG工具
+    rag_tool = RAGTool(knowledge_base_path="./knowledge_base")
+    tool_registry.register_tool(rag_tool)
+
+    # 为Agent配置工具
+    agent.tool_registry = tool_registry
+
+    # 开始对话
+    response = agent.run("你好！请记住我叫张三，我是一名Python开发者")
+    print(response)
+
 if __name__ == "__main__":
     #test_swiatch_provider()
     # test_simaple_agent()
     #test_reflection_agent()
-    test_plan_solve_agent()
+    # test_plan_solve_agent()
+    # test_memory_agent()
+    test_memory_rag()

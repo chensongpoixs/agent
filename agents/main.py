@@ -9,7 +9,8 @@ from agents.agent.simple_agent import SimpleAgent
 from agents.tools.registry import ToolRegistry
 from agents.tools.async_executor import AsyncToolExecutor
 from agents.tools.builtin.calculator import CalculatorTool
-
+from agents.agent.react_agent import ReActAgent
+from agents.agent.reflection_agent import ReflectionAgent
 # from agents import create_calculator_registry
 
 # 加载环境变量
@@ -137,8 +138,12 @@ def test_simaple_agent():
     # 测试3:流式响应
     print("=== 测试3:流式响应 ===")
     print("流式响应: ", end="")
+    chunk_data = "";
     for chunk in basic_agent.stream_run("请解释什么是人工智能"):
-        pass  # 内容已在stream_run中实时打印
+        # print(f"{chunk}");
+        #
+        #pass  # 内容已在stream_run中实时打印
+        pass
 
     # 测试4:动态添加工具
     print("\n=== 测试4:动态工具管理 ===")
@@ -152,6 +157,29 @@ def test_simaple_agent():
 
 
 
+
+def test_reflection_agent():
+    llm = LlmClient(provider="llama.cpp");
+
+    # 使用默认通用提示词
+    general_agent = ReflectionAgent(name="我的反思助手", llm=llm);
+    
+    # 使用自定义代码生成提示词(类似第四章)
+    code_prompts = {
+        "initial": "你是Python专家， 请编写函数:{task}",
+        "reflect": "请审查代码的算法效率:\n任务:{task}\n代码:{content}",
+        "refine": "请根据反馈优化代码:\n任务:{task}\n反馈:{feedback}",
+    }
+
+    code_agent = ReflectionAgent(name="我的代码生成助手",
+                                 llm=llm,
+                                 custom_prompts=code_prompts);
+
+    # 测试使用
+    result = general_agent.run("写一篇关于人工智能发展历程的简短文章")
+    print(f"最终结果:{result}");
+
 if __name__ == "__main__":
     #test_swiatch_provider()
-    test_simaple_agent()
+    # test_simaple_agent()
+    test_reflection_agent()

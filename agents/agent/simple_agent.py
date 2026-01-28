@@ -144,6 +144,7 @@ class SimpleAgent(Agent):
     解析文本中的工具调用
     """
     def _parse_tool_calls(self, text: str) -> list:
+        # print(f"_parse_tool_calls:{text}")
         pattern = r'\[TOOL_CALL:([^:]+):([^\]]+)\]';
         matches = re.findall(pattern,   text);
         tool_calls = [];

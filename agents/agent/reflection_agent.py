@@ -16,11 +16,14 @@ Reflection Agent实现 - 自我反思与迭代优化的智能体
 
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, Dict, Any
+import logging
 from ..core.agent import Agent
-from ..core.message import Message
 from ..core.llm_client import LlmClient
+from ..core.message import Message
 from ..core.config import Config
+
+logger = logging.getLogger(__name__)
 
 
 DEFAULT_PROMPTS = {

@@ -11,6 +11,9 @@ import sqlite3
 import json
 import os
 import threading
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class DocumentStore(ABC):
@@ -109,7 +112,7 @@ class SQLiteDocumentStore(DocumentStore):
         if abs_path not in self._initialized_dbs:
             self._init_database()
             self._initialized_dbs.add(abs_path)
-            print(f"[OK] SQLite 文档存储初始化完成: {db_path}")
+            logger.info(f"SQLite 文档存储初始化完成: {db_path}")
         
         self._initialized = True
     
@@ -204,7 +207,7 @@ class SQLiteDocumentStore(DocumentStore):
             cursor.execute(index_sql)
         
         conn.commit()
-        print("[OK] SQLite 数据库表和索引创建完成")
+        logger.info("SQLite 数据库表和索引创建完成")
     
     def add_memory(
         self,
@@ -453,4 +456,4 @@ class SQLiteDocumentStore(DocumentStore):
         if hasattr(self.local, 'connection'):
             self.local.connection.close()
             delattr(self.local, 'connection')
-            print("[OK] SQLite 连接已关闭")
+            logger.info("SQLite 连接已关闭")

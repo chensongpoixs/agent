@@ -16,3 +16,8 @@
 /agents/__pycache__
 /agents/tools/builtin/__pycache__
 /agents/memory/__pycache__
+/agents/memory/types/__pycache__
+/agents/memory/storage/__pycache__
+/memory_data/memory.db
+/agents/memory/rag/__pycache__
+/app.log

@@ -1,10 +1,29 @@
 """HelloAgents统一LLM接口 - 基于OpenAI原生API"""
 
 import os
+import sys
 from typing import Literal, Optional, Iterator
 from openai import OpenAI
 
+import logging
+
 from .exceptions import AgentsException
+
+
+
+
+# 配置日志
+logging.basicConfig(level=logging.NOTSET)
+logger = logging.getLogger(__name__)
+# 创建formatter，添加文件名和行号
+formatter = logging.Formatter(
+    '[%(asctime)s][%(levelname)s][%(name)s][%(lineno)d]%(message)s'
+)
+
+    # 创建控制台handler
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
 
 # 支持的LLM提供商
 SUPPORTED_PROVIDERS = Literal[
@@ -36,10 +55,10 @@ class LlmClient:
 
     def __init__(
         self,
-        model: Optional[str] = None,
-        api_key: Optional[str] = None,
-        base_url: Optional[str] = None,
-        provider: Optional[SUPPORTED_PROVIDERS] = None,
+        model: Optional[str] = "ggml-org_gemma-3-12b-it-GGUF_gemma-3-12b-it-Q4_K_M",
+        api_key: Optional[str] = "llama.cpp",
+        base_url: Optional[str] = "http://127.0.0.1:8899/v1",
+        provider: Optional[SUPPORTED_PROVIDERS] = "llama.cpp",
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
         timeout: Optional[int] = None,
@@ -69,11 +88,18 @@ class LlmClient:
         requested_provider = (provider or "").lower() if provider else None
         self.provider = provider or self._auto_detect_provider(api_key, base_url)
 
+        logger.info(f"base_url:{base_url}, api_key:{api_key}, model:{self.model}")
+        # if api_key == "llama.cpp":
+        #     base_url = "http://127.0.0.1:8899/v1"
+
         if requested_provider == "custom":
             self.provider = "custom"
             self.api_key = api_key or os.getenv("LLM_API_KEY")
             self.base_url = base_url or os.getenv("LLM_BASE_URL")
+        # elif requested_provider == "llama.cpp":
+        #     self.provider
         else:
+
             # 根据provider确定API密钥和base_url
             self.api_key, self.base_url = self._resolve_credentials(api_key, base_url)
 
@@ -82,6 +108,10 @@ class LlmClient:
             self.model = self._get_default_model()
         if not all([self.api_key, self.base_url]):
             raise AgentsException("API密钥和服务地址必须被提供或在.env文件中定义。")
+
+        # 规范化 base_url：某些环境变量会写成 "api.xxx.com"（缺少协议），会导致 httpx 报错
+        #if self.base_url and not (self.base_url.startswith("http://") or self.base_url.startswith("https://")):
+        #    self.base_url = "https://" + self.base_url.lstrip("/")
 
         # 创建OpenAI客户端
         self._client = self._create_client()
@@ -237,7 +267,9 @@ class LlmClient:
 
     def _create_client(self) -> OpenAI:
         """创建OpenAI客户端"""
+        logger.info(f"base_url:{self.base_url}, api_key:{self.api_key}, model:{self.model}, timeout:{self.timeout}")
         return OpenAI(
+            # model = self.model,
             api_key=self.api_key,
             base_url=self.base_url,
             timeout=self.timeout
@@ -302,7 +334,7 @@ class LlmClient:
         Yields:
             str: 流式响应的文本片段
         """
-        print(f"🧠 正在调用 {self.model} 模型...")
+        logger.info(f"🧠 正在调用 {self.model} 模型...")
         try:
             response = self._client.chat.completions.create(
                 model=self.model,
@@ -313,16 +345,16 @@ class LlmClient:
             )
 
             # 处理流式响应
-            print("✅ 大语言模型响应成功:")
+            logger.info("✅ 大语言模型响应成功:")
             for chunk in response:
                 content = chunk.choices[0].delta.content or ""
                 if content:
-                    print(content, end="", flush=True)
+                    logger.info(content, end="", flush=True)
                     yield content
-            print()  # 在流式输出结束后换行
+            logger.info()  # 在流式输出结束后换行
 
         except Exception as e:
-            print(f"❌ 调用LLM API时发生错误: {e}")
+            logger.info(f"❌ 调用LLM API时发生错误: {e}")
             raise AgentsException(f"LLM调用失败: {str(e)}")
 
     def invoke(self, messages: list[dict[str, str]], **kwargs) -> str:
@@ -330,6 +362,7 @@ class LlmClient:
         非流式调用LLM，返回完整响应。
         适用于不需要流式输出的场景。
         """
+        logger.info(f"🧠 正在调用 {self.model} 模型...")
         try:
             response = self._client.chat.completions.create(
                 model=self.model,
@@ -340,7 +373,10 @@ class LlmClient:
             )
             return response.choices[0].message.content
         except Exception as e:
-            raise AgentsException(f"LLM调用失败: {str(e)}")
+            # 默认不让 demo/main 直接崩溃；如需严格失败可设置 LLM_RAISE_ON_ERROR=1
+            if os.getenv("LLM_RAISE_ON_ERROR", "0") == "1":
+                raise AgentsException(f"LLM调用失败: {str(e)}")
+            return f"❌ LLM调用失败（已降级为文本错误返回）: {str(e)}"
 
     def stream_invoke(self, messages: list[dict[str, str]], **kwargs) -> Iterator[str]:
         """

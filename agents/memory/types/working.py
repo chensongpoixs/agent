@@ -1,9 +1,13 @@
-# 工作记忆（TTL管理，纯内存）
+"""工作记忆（TTL管理，纯内存）
+
+注意：历史代码里存在错误导入 `from memory.base ...`（会导致运行时找不到模块）。
+统一改为相对导入 `from ..base import ...`。
+"""
 
 from typing import Optional, Dict, List, Any
 
 
-from memory.base import MemoryConfig, MemoryItem, BaseModel, BaseMemory
+from ..base import MemoryConfig, MemoryItem, BaseMemory
 
 from datetime import datetime, timedelta
 

@@ -1,7 +1,10 @@
 """工具链管理器 - HelloAgents工具链式调用支持"""
 
+import logging
 from typing import List, Dict, Any, Optional
 from .registry import ToolRegistry
+
+logger = logging.getLogger(__name__)
 
 
 class ToolChain:
@@ -27,7 +30,7 @@ class ToolChain:
             "output_key": output_key or f"step_{len(self.steps)}_result"
         }
         self.steps.append(step)
-        print(f"✅ 工具链 '{self.name}' 添加步骤: {tool_name}")
+        logger.info(f"✅ 工具链 '{self.name}' 添加步骤: {tool_name}")
 
     def execute(self, registry: ToolRegistry, input_data: str, context: Dict[str, Any] = None) -> str:
         """
@@ -44,7 +47,7 @@ class ToolChain:
         if not self.steps:
             return "❌ 工具链为空，无法执行"
 
-        print(f"🚀 开始执行工具链: {self.name}")
+        logger.info(f"🚀 开始执行工具链: {self.name}")
         
         # 初始化上下文
         if context is None:
@@ -58,7 +61,7 @@ class ToolChain:
             input_template = step["input_template"]
             output_key = step["output_key"]
             
-            print(f"📝 执行步骤 {i+1}/{len(self.steps)}: {tool_name}")
+            logger.info(f"📝 执行步骤 {i+1}/{len(self.steps)}: {tool_name}")
             
             # 替换模板中的变量
             try:
@@ -71,11 +74,11 @@ class ToolChain:
                 result = registry.execute_tool(tool_name, actual_input)
                 context[output_key] = result
                 final_result = result
-                print(f"✅ 步骤 {i+1} 完成")
+                logger.info(f"✅ 步骤 {i+1} 完成")
             except Exception as e:
                 return f"❌ 工具 '{tool_name}' 执行失败: {e}"
         
-        print(f"🎉 工具链 '{self.name}' 执行完成")
+        logger.info(f"🎉 工具链 '{self.name}' 执行完成")
         return final_result
 
 
@@ -89,7 +92,7 @@ class ToolChainManager:
     def register_chain(self, chain: ToolChain):
         """注册工具链"""
         self.chains[chain.name] = chain
-        print(f"✅ 工具链 '{chain.name}' 已注册")
+        logger.info(f"✅ 工具链 '{chain.name}' 已注册")
 
     def execute_chain(self, chain_name: str, input_data: str, context: Dict[str, Any] = None) -> str:
         """执行指定的工具链"""

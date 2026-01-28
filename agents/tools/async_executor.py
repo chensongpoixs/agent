@@ -2,8 +2,11 @@
 
 import asyncio
 import concurrent.futures
+import logging
 from typing import Dict, Any, List, Callable, Optional
 from .registry import ToolRegistry
+
+logger = logging.getLogger(__name__)
 
 
 class AsyncToolExecutor:
@@ -36,7 +39,7 @@ class AsyncToolExecutor:
         Returns:
             执行结果列表，包含任务信息和结果
         """
-        print(f"🚀 开始并行执行 {len(tasks)} 个工具任务")
+        logger.info(f"🚀 开始并行执行 {len(tasks)} 个工具任务")
         
         # 创建异步任务
         async_tasks = []
@@ -47,7 +50,7 @@ class AsyncToolExecutor:
             if not tool_name:
                 continue
                 
-            print(f"📝 创建任务 {i+1}: {tool_name}")
+            logger.info(f"📝 创建任务 {i+1}: {tool_name}")
             async_task = self.execute_tool_async(tool_name, input_data)
             async_tasks.append((i, task, async_task))
         
@@ -63,7 +66,7 @@ class AsyncToolExecutor:
                     "result": result,
                     "status": "success"
                 })
-                print(f"✅ 任务 {i+1} 完成: {task['tool_name']}")
+                logger.info(f"✅ 任务 {i+1} 完成: {task['tool_name']}")
             except Exception as e:
                 results.append({
                     "task_id": i,
@@ -72,9 +75,9 @@ class AsyncToolExecutor:
                     "result": str(e),
                     "status": "error"
                 })
-                print(f"❌ 任务 {i+1} 失败: {task['tool_name']} - {e}")
+                logger.error(f"❌ 任务 {i+1} 失败: {task['tool_name']} - {e}")
         
-        print(f"🎉 并行执行完成，成功: {sum(1 for r in results if r['status'] == 'success')}/{len(results)}")
+        logger.info(f"🎉 并行执行完成，成功: {sum(1 for r in results if r['status'] == 'success')}/{len(results)}")
         return results
 
     async def execute_tools_batch(self, tool_name: str, input_list: List[str]) -> List[Dict[str, Any]]:
@@ -97,7 +100,7 @@ class AsyncToolExecutor:
     def close(self):
         """关闭执行器"""
         self.executor.shutdown(wait=True)
-        print("🔒 异步工具执行器已关闭")
+        logger.info("🔒 异步工具执行器已关闭")
 
     def __enter__(self):
         return self
@@ -171,10 +174,10 @@ async def demo_parallel_execution():
     results = await run_parallel_tools(registry, tasks)
     
     # 显示结果
-    print("\n📊 并行执行结果:")
+    logger.info("\n📊 并行执行结果:")
     for result in results:
         status_icon = "✅" if result["status"] == "success" else "❌"
-        print(f"{status_icon} {result['tool_name']}({result['input_data']}) = {result['result']}")
+        logger.info(f"{status_icon} {result['tool_name']}({result['input_data']}) = {result['result']}")
     
     return results
 

@@ -1,10 +1,13 @@
 """搜索工具 - Agents原生搜索实现"""
 
 import os
+import logging
 from typing import Optional, Dict, Any, List
 
 from ..base import Tool, ToolParameter
 from ...core.exceptions import AgentsException
+
+logger = logging.getLogger(__name__)
 
 class SearchTool(Tool):
     """
@@ -35,35 +38,35 @@ class SearchTool(Tool):
                 from tavily import TavilyClient
                 self.tavily_client = TavilyClient(api_key=self.tavily_key)
                 self.available_backends.append("tavily")
-                print("✅ Tavily搜索引擎已初始化")
+                logger.info("✅ Tavily搜索引擎已初始化")
             except ImportError:
-                print("⚠️ Tavily未安装，无法使用Tavily搜索")
+                logger.warning("⚠️ Tavily未安装，无法使用Tavily搜索")
         else:
-            print("⚠️ TAVILY_API_KEY未设置")
+            logger.warning("⚠️ TAVILY_API_KEY未设置")
 
         # 检查SerpApi可用性
         if self.serpapi_key:
             try:
                 import serpapi
                 self.available_backends.append("serpapi")
-                print("✅ SerpApi搜索引擎已初始化")
+                logger.info("✅ SerpApi搜索引擎已初始化")
             except ImportError:
-                print("⚠️ SerpApi未安装，无法使用SerpApi搜索")
+                logger.warning("⚠️ SerpApi未安装，无法使用SerpApi搜索")
         else:
-            print("⚠️ SERPAPI_API_KEY未设置")
+            logger.warning("⚠️ SERPAPI_API_KEY未设置")
 
         # 确定最终使用的后端
         if self.backend == "hybrid":
             if self.available_backends:
-                print(f"🔧 混合搜索模式已启用，可用后端: {', '.join(self.available_backends)}")
+                logger.info(f"🔧 混合搜索模式已启用，可用后端: {', '.join(self.available_backends)}")
             else:
-                print("⚠️ 没有可用的搜索后端，请配置API密钥")
+                logger.warning("⚠️ 没有可用的搜索后端，请配置API密钥")
         elif self.backend == "tavily" and "tavily" not in self.available_backends:
-            print("⚠️ Tavily不可用，请检查TAVILY_API_KEY配置")
+            logger.warning("⚠️ Tavily不可用，请检查TAVILY_API_KEY配置")
         elif self.backend == "serpapi" and "serpapi" not in self.available_backends:
-            print("⚠️ SerpApi不可用，请检查SERPAPI_API_KEY配置")
+            logger.warning("⚠️ SerpApi不可用，请检查SERPAPI_API_KEY配置")
         elif self.backend not in ["tavily", "serpapi", "hybrid"]:
-            print("⚠️ 不支持的搜索后端，将使用hybrid模式")
+            logger.warning("⚠️ 不支持的搜索后端，将使用hybrid模式")
             self.backend = "hybrid"
 
     def run(self, parameters: Dict[str, Any]) -> str:
@@ -80,7 +83,7 @@ class SearchTool(Tool):
         if not query:
             return "错误：搜索查询不能为空"
 
-        print(f"🔍 正在执行搜索: {query}")
+        logger.info(f"🔍 正在执行搜索: {query}")
 
         try:
             if self.backend == "hybrid":
@@ -107,22 +110,22 @@ class SearchTool(Tool):
         # 优先使用Tavily（AI优化的搜索）
         if "tavily" in self.available_backends:
             try:
-                print("🎯 使用Tavily进行AI优化搜索")
+                logger.info("🎯 使用Tavily进行AI优化搜索")
                 return self._search_tavily(query)
             except Exception as e:
-                print(f"⚠️ Tavily搜索失败: {e}")
+                logger.warning(f"⚠️ Tavily搜索失败: {e}")
                 # 如果Tavily失败，尝试SerpApi
                 if "serpapi" in self.available_backends:
-                    print("🔄 切换到SerpApi搜索")
+                    logger.info("🔄 切换到SerpApi搜索")
                     return self._search_serpapi(query)
 
         # 如果Tavily不可用，使用SerpApi
         elif "serpapi" in self.available_backends:
             try:
-                print("🎯 使用SerpApi进行Google搜索")
+                logger.info("🎯 使用SerpApi进行Google搜索")
                 return self._search_serpapi(query)
             except Exception as e:
-                print(f"⚠️ SerpApi搜索失败: {e}")
+                logger.warning(f"⚠️ SerpApi搜索失败: {e}")
 
         # 如果都失败了，返回API配置提示
         return "❌ 所有搜索源都失败了，请检查网络连接和API密钥配置"

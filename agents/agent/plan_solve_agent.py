@@ -12,12 +12,15 @@
 
 
 import ast
+import logging
 
 from typing import Optional, List, Dict, Any
 from ..core.agent import Agent
 from ..core.llm_client import LlmClient
 from ..core.config import Config
 from ..core.message import Message
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -83,10 +86,10 @@ class Planner:
         messages = [{"role": "user", "content": prompt}];
         
 
-        print("--- 正在生成计划 ---")
+        logger.info("--- 正在生成计划 ---")
         response_text = self.llm_client.invoke(messages, **kwargs) or "";
 
-        print(f"✅ 计划已生成:\n{response_text}");
+        logger.info(f"✅ 计划已生成:\n{response_text}");
 
         try:
             #提取Python代码块中的列表
@@ -94,11 +97,11 @@ class Planner:
             plan = ast.literal_eval(plan_str);
             return plan if isinstance(plan, list) else [];
         except(ValueError, SyntaxError, IndexError) as e:
-            print(f"❌ 解析计划时出错: {e}")
-            print(f"原始响应: {response_text}")
+            logger.error(f"❌ 解析计划时出错: {e}")
+            logger.error(f"原始响应: {response_text}")
             return []
         except Exception as e:
-            print(f"❌ 解析计划时发生未知错误: {e}")
+            logger.error(f"❌ 解析计划时发生未知错误: {e}")
             return []
 
 
@@ -122,9 +125,9 @@ class Executor:
     def execute(self, question: str, plan: List[str], **kwargs) ->str:
         history = "";
         final_answer = "";
-        print("\n--- 正在执行计划 ---")
+        logger.info("\n--- 正在执行计划 ---")
         for i, step in enumerate(plan, 1):
-            print(f"\n-> 正在执行步骤 {i}/{len(plan)}: {step}")
+            logger.info(f"\n-> 正在执行步骤 {i}/{len(plan)}: {step}")
             prompt = self.prompt_template.format(
                 question=question,
                 plan=plan,
@@ -136,7 +139,7 @@ class Executor:
 
             history += f"步骤 {i}: {step}\n结果: {response_text}\n\n"
             final_answer = response_text
-            print(f"✅ 步骤 {i} 已完成，结果: {final_answer}")
+            logger.info(f"✅ 步骤 {i} 已完成，结果: {final_answer}")
 
         return final_answer;
 
@@ -189,22 +192,24 @@ class PlanAndSolveAgent(Agent):
         最终答案
     """
     def run(self, input_text:str, **kwargs) ->str:
-        print(f"\n🤖 {self.name} 开始处理问题: {input_text}");
+        logger.info(f"\n🤖 {self.name} 开始处理问题: {input_text}")
 
         # 1. 生成计划
-        plan = self.planner.plan(input_text, **kwargs);
+        plan = self.planner.plan(input_text, **kwargs)
         if not plan:
             final_answer = "无法生成有效的行动计划，任务终止。"
-            print(f"\n--- 任务终止 ---\n{final_answer}");
+            logger.info("\n--- 任务终止 ---")
+            logger.info(final_answer)
 
             # 保存到历史记录
-            self.add_message(Message(input_text, "user"));
-            self.add_message(Message(final_answer, "assistant"));
-            return final_answer;
+            self.add_message(Message(input_text, "user"))
+            self.add_message(Message(final_answer, "assistant"))
+            return final_answer
 
         # 2. 执行计划
-        final_answer = self.executor.execute(input_text, plan, **kwargs);
-        print(f"\n--- 任务完成 ---\n最终答案: {final_answer}");
+        final_answer = self.executor.execute(input_text, plan, **kwargs)
+        logger.info("\n--- 任务完成 ---")
+        logger.info(f"最终答案: {final_answer}")
 
         # 保存到历史记录中
         self.add_message(Message(input_text, "user"));

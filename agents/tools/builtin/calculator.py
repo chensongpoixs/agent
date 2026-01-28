@@ -3,10 +3,13 @@
 import ast
 import operator
 import math
+import logging
 from typing import Dict, Any
 
 from ..base import Tool
 from ...core.exceptions import ToolException
+
+logger = logging.getLogger(__name__)
 
 class CalculatorTool(Tool):
     """Python计算器工具"""
@@ -60,18 +63,18 @@ class CalculatorTool(Tool):
         if not expression:
             return "错误：计算表达式不能为空"
 
-        print(f"🧮 正在计算: {expression}")
+        logger.info(f"🧮 正在计算: {expression}")
 
         try:
             # 解析表达式
             node = ast.parse(expression, mode='eval')
             result = self._eval_node(node.body)
             result_str = str(result)
-            print(f"✅ 计算结果: {result_str}")
+            logger.info(f"✅ 计算结果: {result_str}")
             return result_str
         except Exception as e:
             error_msg = f"计算失败: {str(e)}"
-            print(f"❌ {error_msg}")
+            logger.error(f"❌ {error_msg}")
             return error_msg
     
     def _eval_node(self, node):

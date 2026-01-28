@@ -1,6 +1,7 @@
 ###############
 """ReAct Agent实现 - 推理与行动结合的智能体"""
 import re
+import logging
 from typing import Optional, List, Tuple
 # from agents import ReActAgent, LlmClient, Config, Message, ToolRegistry
 
@@ -9,6 +10,8 @@ from ..core.config import Config
 from ..core.message import Message
 from ..core.agent import Agent
 from ..tools.registry import ToolRegistry
+
+logger = logging.getLogger(__name__)
 
 
 DEFAULT_REACT_PROMPT = """你是一个具备推理和行动能力的AI助手。你可以通过思考分析问题，然后调用合适的工具来获取信息，最终给出准确的答案。
@@ -95,11 +98,11 @@ class ReActAgent(Agent):
         self.current_history = [];
         current_step = 0;
 
-        print(f"\n🤖 {self.name} 开始处理问题: {input_text}")
+        logger.info(f"\n🤖 {self.name} 开始处理问题: {input_text}")
 
         while current_step < self.max_steps:
             current_step +=1;
-            print(f"\n--- 第 {current_step} 步 ---")
+            logger.info(f"\n--- 第 {current_step} 步 ---")
 
             # 构建提示词
             tools_desc = self.tool_registry.get_tools_description();
@@ -115,7 +118,7 @@ class ReActAgent(Agent):
             response_text = self.llm.invoke(messages, **kwargs);
 
             if not response_text:
-                print("❌ 错误：LLM未能返回有效响应。")
+                logger.error("❌ 错误：LLM未能返回有效响应。")
                 break
 
             # 解析输出
@@ -123,17 +126,17 @@ class ReActAgent(Agent):
     
             # 思考内容
             if thought:
-                print(f"🤔 思考: {thought}")
+                logger.info(f"🤔 思考: {thought}")
 
             # not action
             if not action:
-                print("⚠️ 警告：未能解析出有效的Action，流程终止。")
+                logger.warning("⚠️ 警告：未能解析出有效的Action，流程终止。")
                 break
 
             # 检查是否完成
             if action.startswith("Finish"):
                 final_answer = self._parse_action_input(action_text=action);
-                print(f"🎉 最终答案: {final_answer}");
+                logger.info(f"🎉 最终答案: {final_answer}");
     
                 # 保存到历史记录
                 self.add_message(Message(input_text, "user"));
@@ -146,18 +149,18 @@ class ReActAgent(Agent):
             if not tool_name or tool_input is None:
                 self.current_history.append("Observation: 无效的Action格式，请检查。");
                 continue;
-
-            print(f"🎬 行动: {tool_name}[{tool_input}]");
+                
+            logger.info(f"🎬 行动: {tool_name}[{tool_input}]");
 
             # 调用工具
             observation = self.tool_registry.execute_tool(tool_name, tool_input);
-            print(f"👀 观察: {observation}");
+            logger.info(f"👀 观察: {observation}");
 
             # 更新历史
             self.current_history.append(f"Action:{action}");
             self.current_history.append(f"Observation:{observation}");
     
-        print("⏰ 已达到最大步数，流程终止。")
+        logger.info("⏰ 已达到最大步数，流程终止。")
         final_answer = "抱歉，我无法在限定步数内完成这个任务。"
 
         # 保存到历史记录

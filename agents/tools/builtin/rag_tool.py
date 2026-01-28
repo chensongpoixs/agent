@@ -23,10 +23,13 @@ answer = rag.run({"action": "ask", "question": "什么是机器学习？"})
 from typing import Dict, Any, List, Optional
 import os
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 from ..base import Tool, ToolParameter, tool_action
 from ...memory.rag.pipeline import create_rag_pipeline
-from ...core.llm import HelloAgentsLLM
+from ...core.llm_client import LlmClient
 
 class RAGTool(Tool):
     """RAG工具
@@ -79,7 +82,7 @@ class RAGTool(Tool):
             self._pipelines[self.rag_namespace] = default_pipeline
 
             # 初始化 LLM 用于回答生成
-            self.llm = HelloAgentsLLM()
+            self.llm = LlmClient(provider="llama.cpp")
 
             self.initialized = True
             print(f"✅ RAG工具初始化成功: namespace={self.rag_namespace}, collection={self.collection_name}")

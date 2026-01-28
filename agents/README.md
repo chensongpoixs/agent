@@ -9,7 +9,7 @@ hello-agents/
 │   │
 │   ├── core/                     # 核心框架层
 │   │   ├── agent.py              # Agent基类
-│   │   ├── llm.py                # HelloAgentsLLM统一接口
+│   │   ├── llm_client.py         # LlmClient统一接口
 │   │   ├── message.py            # 消息系统
 │   │   ├── config.py             # 配置管理
 │   │   └── exceptions.py         # 异常体系

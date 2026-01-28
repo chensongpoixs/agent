@@ -12,6 +12,9 @@ from agents.core.message import Message;
 from agents.core.config import Config
 from agents.tools.registry import ToolRegistry
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SimpleAgent(Agent):
@@ -26,11 +29,11 @@ class SimpleAgent(Agent):
         super().__init__(name=name, llm=llm, system_prompt=system_prompt, config=config);
         self.tool_registry = tool_registry
         self.enable_tool_calling = enable_tool_calling
-        print(f"✅ {name} 初始化完成，工具调用: {'启用' if self.enable_tool_calling else '禁用'}")
+        logger.info(f"✅ {name} 初始化完成，工具调用: {'启用' if self.enable_tool_calling else '禁用'}")
 
     def run(self, input_text: str, max_tool_iterations: int = 3, **kwargs) -> str:
         """运行Agent"""
-        print(f"🤖 {self.name} 收到输入: {input_text}");
+        logger.info(f"🤖 {self.name} 收到输入: {input_text}");
         # 构建初始消息列表
         messages = [];
 

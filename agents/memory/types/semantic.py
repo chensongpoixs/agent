@@ -21,7 +21,7 @@ from ..embedding import get_text_embedder, get_dimension
 
 
 # 配置日志
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class Entity:

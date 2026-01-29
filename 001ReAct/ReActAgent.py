@@ -41,7 +41,7 @@ History: {history}
 """
 
 class ReActAgent:
-    def __init__(self, llm_client: AgentsLLM, tool_executor: ToolExecutor, max_steps: int = 5):
+    def __init__(self, llm_client: AgentsLLM, tool_executor: ToolExecutor, max_steps: int = 3):
         self.llm_client = llm_client
         self.tool_executor = tool_executor
         self.max_steps = max_steps

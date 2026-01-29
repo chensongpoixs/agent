@@ -25,16 +25,16 @@ import sys
 # 创建logger
 logger = logging.getLogger(__name__)
 # from agents import create_calculator_registry
-logging.basicConfig(level=logging.INFO)
-# 创建formatter，添加文件名和行号
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
-)
+# logging.basicConfig(level=logging.INFO)
+# # 创建formatter，添加文件名和行号
+# formatter = logging.Formatter(
+#     '%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
+# )
 
-    # 创建控制台handler
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
+#     # 创建控制台handler
+# console_handler = logging.StreamHandler(sys.stdout)
+# console_handler.setFormatter(formatter)
+# logger.addHandler(console_handler)
 # 加载环境变量
 load_dotenv()
 
@@ -278,7 +278,16 @@ def test_memory_rag_v0():
     tool_registry = ToolRegistry()
     tool_registry.register_tool(memory_tool)
     agent.tool_registry = tool_registry
-    
+    logger.info("\n=== 搜索特定记忆 ===")
+    # 搜索前端相关的记忆
+    logger.info("🔍 搜索 '前端工程师':")
+    result = memory_tool.run({"action": "search", "query":"前端工程师", "limit":3})
+    logger.info(result)
+
+    logger.info("\n=== 记忆摘要 ===")
+    result = memory_tool.run({"action": "summary"})
+    logger.info(result)
+    return
     # 体验记忆功能
     logger.info("=== 添加多个记忆 ===")
 
@@ -297,7 +306,7 @@ def test_memory_rag_v0():
     logger.info("\n=== 搜索特定记忆 ===")
     # 搜索前端相关的记忆
     logger.info("🔍 搜索 '前端工程师':")
-    result = memory_tool.run({"action": "add", "query":"前端工程师", "limit":3})
+    result = memory_tool.run({"action": "search", "query":"前端工程师", "limit":3})
     logger.info(result)
 
     logger.info("\n=== 记忆摘要 ===")
@@ -339,7 +348,7 @@ def test_memory_rag_v0():
     logger.info("\n=== 搜索特定记忆 ===")
     # 搜索前端相关的记忆
     logger.info("🔍 搜索 '前端工程师':")
-    result = memory_tool.run({"action": "add", "query":"前端工程师", "limit":3})
+    result = memory_tool.run({"action": "search", "query":"前端工程师", "limit":3})
     logger.info(result)
 
     logger.info("\n=== 记忆摘要 ===")

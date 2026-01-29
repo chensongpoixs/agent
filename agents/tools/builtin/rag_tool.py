@@ -85,12 +85,12 @@ class RAGTool(Tool):
             self.llm = LlmClient(provider="llama.cpp")
 
             self.initialized = True
-            print(f"✅ RAG工具初始化成功: namespace={self.rag_namespace}, collection={self.collection_name}")
+            logger.info(f"✅ RAG工具初始化成功: namespace={self.rag_namespace}, collection={self.collection_name}")
             
         except Exception as e:
             self.initialized = False
             self.init_error = str(e)
-            print(f"❌ RAG工具初始化失败: {e}")
+            logger.info(f"❌ RAG工具初始化失败: {e}")
 
     def _get_pipeline(self, namespace: Optional[str] = None) -> Dict[str, Any]:
         """获取指定命名空间的 RAG 管道，若不存在则自动创建"""
@@ -468,7 +468,7 @@ class RAGTool(Tool):
                 return "❌ 请提供要询问的问题"
 
             user_question = question.strip()
-            print(f"🔍 智能问答: {user_question}")
+            logger.info(f"🔍 智能问答: {user_question}")
             
             # 1. 检索相关内容
             pipeline = self._get_pipeline(namespace)
@@ -880,7 +880,7 @@ class RAGTool(Tool):
         start_time = time.time()
         
         for i, file_path in enumerate(file_paths, 1):
-            print(f"📄 处理文档 {i}/{len(file_paths)}: {os.path.basename(file_path)}")
+            logger.info(f"📄 处理文档 {i}/{len(file_paths)}: {os.path.basename(file_path)}")
             
             try:
                 result = self.add_document(file_path, namespace)
@@ -930,7 +930,7 @@ class RAGTool(Tool):
         
         for i, text in enumerate(texts):
             doc_id = document_ids[i] if document_ids else f"batch_text_{i+1}"
-            print(f"📝 处理文本 {i+1}/{len(texts)}: {doc_id}")
+            logger.info(f"📝 处理文本 {i+1}/{len(texts)}: {doc_id}")
             
             try:
                 result = self.add_text(text, namespace, doc_id)

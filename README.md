@@ -44,6 +44,8 @@
 [3. Reflection： 一种赋予智能体“反思”能力的范式，通过自我批判和修正来优化结果。](/003Reflection/)
 
 
+python -m agents.main
+
 
 # 未来3-5年程序员的高潜力方向
 

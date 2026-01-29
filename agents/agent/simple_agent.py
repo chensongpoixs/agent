@@ -55,7 +55,7 @@ class SimpleAgent(Agent):
             response = self.llm.invoke(messages=messages, kwargs=kwargs);
             self.add_message(message=Message(content=input_text, role="user"));
             self.add_message(message=Message(content=response, role="assistant"));
-            print(f"✅ {self.name} 响应完成");
+            logger.info(f"✅ {self.name} 响应完成");
             return response
         
         # 支持多轮工具调的逻辑
@@ -105,7 +105,7 @@ class SimpleAgent(Agent):
             tool_calls = self._parse_tool_calls(response)
 
             if tool_calls:
-                print(f"🔧 检测到 {len(tool_calls)} 个工具调用")
+                logger.info(f"🔧 检测到 {len(tool_calls)} 个工具调用")
                 # 执行所有工具调用并收集结果
                 tool_results = []
                 clean_response = response
@@ -137,7 +137,7 @@ class SimpleAgent(Agent):
         # 保存到历史记录
         self.add_message(Message(input_text, "user"))
         self.add_message(Message(final_response, "assistant"))
-        print(f"✅ {self.name} 响应完成")
+        logger.info(f"✅ {self.name} 响应完成")
 
         return final_response
 
@@ -227,7 +227,7 @@ class SimpleAgent(Agent):
     自定义的流式运行方法
     """
     def stream_run(self, input_text:str, **kwargs) -> Iterator[str]:
-        print(f"🌊 {self.name} 开始流式处理: {input_text}")
+        logger.info(f"🌊 {self.name} 开始流式处理: {input_text}")
 
         messages = []
 
@@ -241,18 +241,15 @@ class SimpleAgent(Agent):
 
         # 流式调用LLM
         full_response = ""
-        print("📝 实时响应: ", end="")
+        logger.info("📝 实时响应开始")
         for chunk in self.llm.stream_invoke(messages, **kwargs):
             full_response += chunk
-            print(chunk, end="", flush=True)
             yield chunk
-
-        print()  # 换行
 
         # 保存完整对话到历史记录
         self.add_message(Message(input_text, "user"))
         self.add_message(Message(full_response, "assistant"))
-        print(f"✅ {self.name} 流式响应完成")
+        logger.info(f"✅ {self.name} 流式响应完成")
 
     def add_tool(self, tool) -> None:
         """添加工具到Agent（便利方法）"""
@@ -262,7 +259,7 @@ class SimpleAgent(Agent):
             self.enable_tool_calling = True
 
         self.tool_registry.register_tool(tool)
-        print(f"🔧 工具 '{tool.name}' 已添加")
+        logger.info(f"🔧 工具 '{tool.name}' 已添加")
 
     def has_tools(self) -> bool:
         """检查是否有可用工具"""

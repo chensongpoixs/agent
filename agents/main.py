@@ -287,7 +287,7 @@ def test_memory_rag_v0():
     logger.info("\n=== 记忆摘要 ===")
     result = memory_tool.run({"action": "summary"})
     logger.info(result)
-    return
+    # return
     # 体验记忆功能
     logger.info("=== 添加多个记忆 ===")
 
@@ -359,8 +359,8 @@ if __name__ == "__main__":
     # test_simaple_agent()
     #test_reflection_agent()
     # test_plan_solve_agent()
-    # test_memory_agent()
+    #test_memory_agent()
     
 
-    # test_memory_rag()
-    test_memory_rag_v0()
+    test_memory_rag()
+    #test_memory_rag_v0()

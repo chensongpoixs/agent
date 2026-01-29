@@ -56,6 +56,7 @@ class LlmClient:
     def __init__(
         self,
         model: Optional[str] = "ggml-org_gemma-3-12b-it-GGUF_gemma-3-12b-it-Q4_K_M",
+        # model: Optional[str] = "ggml-org_gpt-oss-20b-GGUF_gpt-oss-20b-mxfp4",
         api_key: Optional[str] = "llama.cpp",
         base_url: Optional[str] = "http://127.0.0.1:8899/v1",
         provider: Optional[SUPPORTED_PROVIDERS] = "llama.cpp",

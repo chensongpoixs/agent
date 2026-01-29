@@ -75,7 +75,7 @@ class Memory:
     # 向记忆中添加一条新的记录
     def add_record(self, record_type:str, content: str):
         self.records.append({"type": record_type, "content": content});
-        print(f"📝 记忆已更新，新增一条 '{record_type}' 记录。")
+        logger.info(f"📝 记忆已更新，新增一条 '{record_type}' 记录。")
 
     """将所有记忆记录格式化为一个连贯的字符串文本"""
     def get_trajectory(self) -> str:
@@ -141,22 +141,22 @@ class ReflectionAgent(Agent):
     """
     def run(self, input_text:str, **kwargs) ->str:
 
-        print(f"\n🤖 {self.name} 开始处理任务: {input_text}")
+        logger.info(f"\n🤖 {self.name} 开始处理任务: {input_text}")
         # 重置记忆
         self.memory = Memory();
 
         # 1. 初始执行
-        print("\n--- 正在进行初始尝试 ---")
+        logger.info("\n--- 正在进行初始尝试 ---")
         initial_prompt = self.prompts["initial"].format(task=input_text);
         initial_result = self._get_llm_response(initial_prompt, **kwargs);
         self.memory.add_record("execution", initial_result);
     
         # 2. 迭代循环: 反思与优化
         for i in range(self.max_iterations):
-            print(f"\n--- 第 {i+1}/{self.max_iterations} 轮迭代 ---");
+            logger.info(f"\n--- 第 {i+1}/{self.max_iterations} 轮迭代 ---");
 
             # a. 反思
-            print("\n-> 正在进行反思...")
+            logger.info("\n-> 正在进行反思...")
             last_result = self.memory.get_last_execution();
             reflect_prompt = self.prompts["reflect"].format(
                 task=input_text,
@@ -168,11 +168,11 @@ class ReflectionAgent(Agent):
     
             # b . 检查是否需要停止
             if "无需改进" in feedback or "no need for improvement" in feedback.lower():
-                print("\n✅ 反思认为结果已无需改进，任务完成。")
+                logger.info("\n✅ 反思认为结果已无需改进，任务完成。")
                 break
 
             # c. 优化
-            print("\n-> 正在进行优化...");
+            logger.info("\n-> 正在进行优化...");
             reflect_prompt = self.prompts["refine"].format(
                 task=input_text,
                 last_attempt=last_result,
@@ -183,7 +183,7 @@ class ReflectionAgent(Agent):
             self.memory.add_record("execution", refined_result);
     
         final_result = self.memory.get_last_execution();
-        print(f"\n--- 任务完成 ---\n最终结果:\n{final_result}");
+        logger.info(f"\n--- 任务完成 ---\n最终结果:\n{final_result}");
 
         #保存到历史记录
         self.add_message(Message(input_text, "user"));

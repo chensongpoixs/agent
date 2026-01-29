@@ -348,7 +348,7 @@ class FunctionCallAgent(Agent):
             if expanded_tools:
                 for expanded_tool in expanded_tools:
                     self.tool_registry.register_tool(expanded_tool)
-                print(f"✅ MCP工具 '{tool.name}' 已展开为 {len(expanded_tools)} 个独立工具")
+                logger.info(f"✅ MCP工具 '{tool.name}' 已展开为 {len(expanded_tools)} 个独立工具")
                 return
 
         self.tool_registry.register_tool(tool)

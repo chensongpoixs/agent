@@ -74,14 +74,14 @@ def _convert_to_markdown(path: str) -> str:
             return text
         return ""
     except Exception as e:
-        print(f"[WARNING] MarkItDown failed for {path}: {e}")
+        logger.info(f"[WARNING] MarkItDown failed for {path}: {e}")
         return _fallback_text_reader(path)
 
 def _enhanced_pdf_processing(path: str) -> str:
     """
     Enhanced PDF processing with post-processing cleanup.
     """
-    print(f"[RAG] Using enhanced PDF processing for: {path}")
+    logger.info(f"[RAG] Using enhanced PDF processing for: {path}")
     
     # 使用原有MarkItDown提取
     md_instance = _get_markitdown_instance()
@@ -96,11 +96,11 @@ def _enhanced_pdf_processing(path: str) -> str:
         
         # 后处理：清理和重组文本
         cleaned_text = _post_process_pdf_text(raw_text)
-        print(f"[RAG] PDF post-processing completed: {len(raw_text)} -> {len(cleaned_text)} chars")
+        logger.info(f"[RAG] PDF post-processing completed: {len(raw_text)} -> {len(cleaned_text)} chars")
         return cleaned_text
         
     except Exception as e:
-        print(f"[WARNING] Enhanced PDF processing failed for {path}: {e}")
+        logger.info(f"[WARNING] Enhanced PDF processing failed for {path}: {e}")
         return _fallback_text_reader(path)
 
 def _post_process_pdf_text(text: str) -> str:
@@ -330,22 +330,22 @@ def load_and_chunk_texts(paths: List[str], chunk_size: int = 800, chunk_overlap:
     Universal document loader and chunker using MarkItDown.
     Converts all supported formats to markdown, then chunks intelligently.
     """
-    print(f"[RAG] Universal loader start: files={len(paths)} chunk_size={chunk_size} overlap={chunk_overlap} ns={namespace or 'default'}")
+    logger.info(f"[RAG] Universal loader start: files={len(paths)} chunk_size={chunk_size} overlap={chunk_overlap} ns={namespace or 'default'}")
     chunks: List[Dict] = []
     seen_hashes = set()
     
     for path in paths:
         if not os.path.exists(path):
-            print(f"[WARNING] File not found: {path}")
+            logger.info(f"[WARNING] File not found: {path}")
             continue
             
-        print(f"[RAG] Processing: {path}")
+        logger.info(f"[RAG] Processing: {path}")
         ext = (os.path.splitext(path)[1] or '').lower()
         
         # Convert to markdown using MarkItDown
         markdown_text = _convert_to_markdown(path)
         if not markdown_text.strip():
-            print(f"[WARNING] No content extracted from: {path}")
+            logger.info(f"[WARNING] No content extracted from: {path}")
             continue
         
         lang = _detect_lang(markdown_text)
@@ -388,7 +388,7 @@ def load_and_chunk_texts(paths: List[str], chunk_size: int = 800, chunk_overlap:
                 },
             })
             
-    print(f"[RAG] Universal loader done: total_chunks={len(chunks)}")
+    logger.info(f"[RAG] Universal loader done: total_chunks={len(chunks)}")
     return chunks
 
 
@@ -492,7 +492,7 @@ def index_chunks(
     Uses百炼 API with fallback to sentence-transformers.
     """
     if not chunks:
-        print("[RAG] No chunks to index")
+        logger.info("[RAG] No chunks to index")
         return
     
     # Use unified embedding from embedding module
@@ -502,7 +502,7 @@ def index_chunks(
     # Create default Qdrant store if not provided
     if store is None:
         store = _create_default_vector_store(dimension)
-        print(f"[RAG] Created default Qdrant store with dimension {dimension}")
+        logger.info(f"[RAG] Created default Qdrant store with dimension {dimension}")
     
     # Preprocess markdown texts for better embeddings
     processed_texts = []
@@ -511,7 +511,7 @@ def index_chunks(
         processed_content = _preprocess_markdown_for_embedding(raw_content)
         processed_texts.append(processed_content)
     
-    print(f"[RAG] Embedding start: total_texts={len(processed_texts)} batch_size={batch_size}")
+    logger.info(f"[RAG] Embedding start: total_texts={len(processed_texts)} batch_size={batch_size}")
     
     # Batch encoding with unified embedder
     vecs: List[List[float]] = []
@@ -553,7 +553,7 @@ def index_chunks(
                         v = v.tolist()
                     v_norm = [float(x) for x in v]
                     if len(v_norm) != dimension:
-                        print(f"[WARNING] 向量维度异常: 期望{dimension}, 实际{len(v_norm)}")
+                        logger.info(f"[WARNING] 向量维度异常: 期望{dimension}, 实际{len(v_norm)}")
                         # 用零向量填充或截断
                         if len(v_norm) < dimension:
                             v_norm.extend([0.0] * (dimension - len(v_norm)))
@@ -561,12 +561,12 @@ def index_chunks(
                             v_norm = v_norm[:dimension]
                     vecs.append(v_norm)
                 except Exception as e:
-                    print(f"[WARNING] 向量转换失败: {e}, 使用零向量")
+                    logger.info(f"[WARNING] 向量转换失败: {e}, 使用零向量")
                     vecs.append([0.0] * dimension)
                 
         except Exception as e:
-            print(f"[WARNING] Batch {i} encoding failed: {e}")
-            print(f"[RAG] Retrying batch {i} with smaller chunks...")
+            logger.info(f"[WARNING] Batch {i} encoding failed: {e}")
+            logger.info(f"[RAG] Retrying batch {i} with smaller chunks...")
             
             # 尝试重试：将批次分解为更小的块
             success = False
@@ -587,7 +587,7 @@ def index_chunks(
                         try:
                             v_norm = [float(x) for x in v]
                             if len(v_norm) != dimension:
-                                print(f"[WARNING] 向量维度异常: 期望{dimension}, 实际{len(v_norm)}")
+                                logger.info(f"[WARNING] 向量维度异常: 期望{dimension}, 实际{len(v_norm)}")
                                 if len(v_norm) < dimension:
                                     v_norm.extend([0.0] * (dimension - len(v_norm)))
                                 else:
@@ -595,18 +595,18 @@ def index_chunks(
                             vecs.append(v_norm)
                             success = True
                         except Exception as e2:
-                            print(f"[WARNING] 小批次向量转换失败: {e2}")
+                            logger.info(f"[WARNING] 小批次向量转换失败: {e2}")
                             vecs.append([0.0] * dimension)
                 except Exception as e2:
-                    print(f"[WARNING] 小批次 {j//8} 仍然失败: {e2}")
+                    logger.info(f"[WARNING] 小批次 {j//8} 仍然失败: {e2}")
                     # 为这个小批次创建零向量
                     for _ in range(len(small_part)):
                         vecs.append([0.0] * dimension)
             
             if not success:
-                print(f"[ERROR] 批次 {i} 完全失败，使用零向量")
+                logger.info(f"[ERROR] 批次 {i} 完全失败，使用零向量")
         
-        print(f"[RAG] Embedding progress: {min(i+batch_size, len(processed_texts))}/{len(processed_texts)}")
+        logger.info(f"[RAG] Embedding progress: {min(i+batch_size, len(processed_texts))}/{len(processed_texts)}")
     
     # Prepare metadata with RAG tags
     metas: List[Dict] = []
@@ -626,12 +626,12 @@ def index_chunks(
         metas.append(meta)
         ids.append(ch["id"])
     
-    print(f"[RAG] Qdrant upsert start: n={len(vecs)}")
+    logger.info(f"[RAG] Qdrant upsert start: n={len(vecs)}")
     success = store.add_vectors(vectors=vecs, metadata=metas, ids=ids)
     if success:
-        print(f"[RAG] Qdrant upsert done: {len(vecs)} vectors indexed")
+        logger.info(f"[RAG] Qdrant upsert done: {len(vecs)} vectors indexed")
     else:
-        print(f"[RAG] Qdrant upsert failed")
+        logger.info(f"[RAG] Qdrant upsert failed")
         raise RuntimeError("Failed to index vectors to Qdrant")
 
 
@@ -657,7 +657,7 @@ def embed_query(query: str) -> List[float]:
         
         # 检查维度
         if len(result) != dimension:
-            print(f"[WARNING] Query向量维度异常: 期望{dimension}, 实际{len(result)}")
+            logger.info(f"[WARNING] Query向量维度异常: 期望{dimension}, 实际{len(result)}")
             # 用零向量填充或截断
             if len(result) < dimension:
                 result.extend([0.0] * (dimension - len(result)))
@@ -666,7 +666,7 @@ def embed_query(query: str) -> List[float]:
         
         return result
     except Exception as e:
-        print(f"[WARNING] Query embedding failed: {e}")
+        logger.info(f"[WARNING] Query embedding failed: {e}")
         # Return zero vector as fallback
         return [0.0] * dimension
 
@@ -708,7 +708,7 @@ def search_vectors(
             where=where
         )
     except Exception as e:
-        print(f"[WARNING] RAG search failed: {e}")
+        logger.info(f"[WARNING] RAG search failed: {e}")
         return []
 
 

@@ -409,7 +409,9 @@ class ContextBuilder:
             system_instructions=system_instructions,
             additional_packets=additional_packets or []
         )
-        
+        # logger.info(f"packets:{packets}");
+        for p in packets:
+            logger.info(f"content:{p.content}, timestamp:{p.timestamp}, metadata:{p.metadata}, token_count:{p.token_count},  relevance_score:{p. relevance_score}")
         # 2. Select: 筛选与排序
         selected_packets = self._select(packets, user_query)
         
@@ -491,14 +493,16 @@ class ContextBuilder:
         # P3: 对话历史（辅助材料）
         if conversation_history:
             # 只保留最近N条
-            recent_history = conversation_history[-5:]
+           # 只保留最近N条
+            recent_history = conversation_history[-10:]
             history_text = "\n".join([
                 f"[{msg.role}] {msg.content}"
                 for msg in recent_history
             ])
             packets.append(ContextPacket(
                 content=history_text,
-                metadata={"type": "history", "count": len(recent_history)}
+                metadata={"type": "history", "count": len(recent_history)},
+                # relevance_score=0.7,
             ))
         
         # 添加额外包
@@ -560,7 +564,7 @@ class ContextBuilder:
                 continue
             selected.append(p)
             used_tokens += p.token_count
-        
+        logger.info(f"[ContextBuilder] 选择了 {len(selected)} 个信息包,共 {used_tokens} tokens")
         return selected
     
     def _structure(

@@ -82,7 +82,7 @@ class RAGTool(Tool):
             self._pipelines[self.rag_namespace] = default_pipeline
 
             # 初始化 LLM 用于回答生成
-            self.llm = LlmClient(provider="llama.cpp")
+            self.llm = LlmClient()
 
             self.initialized = True
             logger.info(f"✅ RAG工具初始化成功: namespace={self.rag_namespace}, collection={self.collection_name}")

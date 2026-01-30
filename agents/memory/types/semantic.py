@@ -21,7 +21,7 @@ from ..embedding import get_text_embedder, get_dimension
 
 
 # 配置日志
-# logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 class Entity:
@@ -212,7 +212,7 @@ class SemanticMemory(BaseMemory):
                 logger.info(f"📚 可用语言模型: {', '.join(loaded_models)}")
                 
         except ImportError:
-            logger.warning("⚠️ spaCy不可用，实体提取将受限")
+            logger.warning("⚠️ spaCy不可用，实体提取将受限 pip install -U spacy \n  python -m spacy download zh_core_web_sm \n python -m spacy download en_core_web_sm")
             self.nlp = None
             self.nlp_models = {}
     

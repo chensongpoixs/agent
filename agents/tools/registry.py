@@ -3,13 +3,17 @@
 import logging
 from typing import Optional, Any, Callable
 from ..core.exceptions import AgentsException
-from .base import Tool
+from .base import Tool, ToolParameter
 
 logger = logging.getLogger(__name__)
+"""工具注册表 - HelloAgents原生工具系统"""
+
+from typing import Optional, Any, Callable
+from .base import Tool
 
 class ToolRegistry:
     """
-    Agents工具注册表
+    HelloAgents工具注册表
 
     提供工具的注册、管理和执行功能。
     支持两种工具注册方式：
@@ -21,13 +25,27 @@ class ToolRegistry:
         self._tools: dict[str, Tool] = {}
         self._functions: dict[str, dict[str, Any]] = {}
 
-    def register_tool(self, tool: Tool):
+    def register_tool(self, tool: Tool, auto_expand: bool = True):
         """
         注册Tool对象
 
         Args:
             tool: Tool实例
+            auto_expand: 是否自动展开可展开的工具（默认True）
         """
+        # 检查工具是否可展开
+        if auto_expand and hasattr(tool, 'expandable') and tool.expandable:
+            expanded_tools = tool.get_expanded_tools()
+            if expanded_tools:
+                # 注册所有展开的子工具
+                for sub_tool in expanded_tools:
+                    if sub_tool.name in self._tools:
+                        logger.warning(f"⚠️ 警告：工具 '{sub_tool.name}' 已存在，将被覆盖。")
+                    self._tools[sub_tool.name] = sub_tool
+                logger.info(f"✅ 工具 '{tool.name}' 已展开为 {len(expanded_tools)} 个独立工具")
+                return
+
+        # 普通工具或不展开的工具
         if tool.name in self._tools:
             logger.warning(f"⚠️ 警告：工具 '{tool.name}' 已存在，将被覆盖。")
 
@@ -114,10 +132,39 @@ class ToolRegistry:
 
         # Tool对象描述
         for tool in self._tools.values():
-            descriptions.append(f"- {tool.name}: {tool.description}")
+            # logger.info(f"tool name:{tool.name}, desc:{tool.description}")
+            descriptions.append(f"- {tool.name}: {tool.description}\n\t参数列表:")
+            for p in tool.get_parameters():
+                parts = [p.name, f"({p.type}"]
+                if p.required:
+                    parts.append("required")
+                else:
+                    parts.append("optional")
+                if hasattr(p, "default"):
+                    parts.append(f"default={p.default}")
+                parts[-1] += ")"
+
+                # logger.info(" ".join(parts))
+                # logger.info(f"  说明: {p.description}")  
+                descriptions.append(f"\t\t - {parts}\n\t\t\t 说明: {p.description}")
+                 
+            # for toolparameter in tool.get_parameters():
+            #     logger.info(f"参数: name={toolparameter.name}, description={toolparameter.description}, parameters={toolparameter.parameters}")
+            # s = tool.get_parameters()
+
+            # logger.info(
+            #     f"参数: name={tool_dict['name']}, "
+            #     f"description={tool_dict['description']}, "
+            #     # f"parameters={tool_dict['parameters']}"
+            # )
+            # for key, value in tool.to_dict().items():
+            #     logger.info(f"{key} = {value}")
+            
+            
 
         # 函数工具描述
         for name, info in self._functions.items():
+            # logger.info(f" name:{name}, desc:{info['description']}")
             descriptions.append(f"- {name}: {info['description']}")
 
         return "\n".join(descriptions) if descriptions else "暂无可用工具"

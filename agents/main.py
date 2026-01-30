@@ -14,7 +14,10 @@ from agents.agent.reflection_agent import ReflectionAgent
 from agents.agent.plan_solve_agent import PlanAndSolveAgent
 from agents.tools.builtin.memory_tool import MemoryTool
 from agents.tools.builtin.rag_tool import RAGTool
-
+from agents.context import ContextBuilder, ContextConfig
+from agents.tools import MemoryTool, RAGTool
+from agents.core.message import Message
+from datetime import datetime
 
 import logging
 
@@ -287,7 +290,7 @@ def test_memory_rag_v0():
     logger.info("\n=== 记忆摘要 ===")
     result = memory_tool.run({"action": "summary"})
     logger.info(result)
-    # return
+    return
     # 体验记忆功能
     logger.info("=== 添加多个记忆 ===")
 
@@ -354,7 +357,248 @@ def test_memory_rag_v0():
     logger.info("\n=== 记忆摘要 ===")
     result = memory_tool.run({"action": "summary"})
     logger.info(result)
+
+
+
+def  test_add_working_semantic_episodic():
+    #  # 创建具有记忆能力的Agent
+    llm = LlmClient()
+    agent = SimpleAgent(name="记忆助手", llm=llm)
+
+    # 创建记忆工具
+    memory_tool = MemoryTool(user_id="user123")
+    tool_registry = ToolRegistry()
+    tool_registry.register_tool(memory_tool)
+    agent.tool_registry = tool_registry
+    # logger.info("\n=== 搜索特定记忆 ===")
+    # # 搜索前端相关的记忆
+    # logger.info("🔍 搜索 '前端工程师':")
+    # result = memory_tool.run({"action": "search", "query":"前端工程师", "limit":3})
+    # logger.info(result)
+    logger.info("=1. 工作记忆 - 临时信息，容量有限=======增加 working  one info 用户刚才问了关于Python函数的问题=============")
+    # agent.add_message()
+    
+    result = memory_tool.run({"action": "add", "content": "用户刚才问了关于Python函数的问题", "memory_type": "working", "importance":0.6});
+    logger.info(f"result:{result}");
+    # logger.info("===2. 情景记忆 - 具体事件和经历=====增加 episodic  one info 2024年3月15日，用户张三完成了第一个Python项目=============")
+    # result = memory_tool.run({"action": "add", "content": "2024年3月15日，用户张三完成了第一个Python项目", "memory_type": "episodic", "importance":0.8, "event_type": "milestone", "localtion":"在线学习平台"});
+    # logger.info(f"result:{result}");
+
+
+
+    # logger.info("====3. 语义记忆 - 抽象知识和概念====增加 semantic  one info Python是一种解释型、面向对象的编程语言=============")
+    # result = memory_tool.run({"action": "add", "content": "Python是一种解释型、面向对象的编程语言", "memory_type": "episodic", "semantic":0.9, "knowledge_type": "factual"});
+    # logger.info(f"result:{result}");
+
+    logger.info("====4. 感知记忆 - 多模态信息====增加 perceptual  one info 用户上传了一张Python代码截图，包含函数定义=============")
+    result = memory_tool.run({"action": "add", "content": "用户上传了一张Python代码截图，包含函数定义", "memory_type": "episodic", "file_path":"./uploads/code_screenshot.png", "modality": "image"});
+    logger.info(f"result:{result}");
+
+
+def  test_search_working_semantic_episodic():
+    #  # 创建具有记忆能力的Agent
+    llm = LlmClient()
+    agent = SimpleAgent(name="记忆助手", llm=llm)
+
+    # 创建记忆工具
+    memory_tool = MemoryTool(user_id="user123")
+    tool_registry = ToolRegistry()
+    tool_registry.register_tool(memory_tool)
+    agent.tool_registry = tool_registry
+    # 基础搜索
+    logger.info("基础搜索 --->Python编程 ")
+    result = memory_tool.run({"action":"search", "query":"Python编程", "limit":5})
+    logger.info(f"result:{result}")
+    # 指定记忆类型搜索
+    logger.info("指定记忆类型搜索 --->学习进度 ")
+    result = memory_tool.run({"action":"search",
+        "query":"学习进度",
+        "memory_type":"episodic",
+        "limit":3
+    })
+    logger.info(f"result:{result}")
+    # 多类型搜索
+    logger.info("多类型搜索 --->函数定义 ")
+    result = memory_tool.run({"action":"search", "query":"函数定义",
+        "memory_types":"semantic,episodic",
+        "min_importance":0.5
+    })
+    logger.info(f"result:{result}")
+
+
+
+# 三种遗忘策略的使用：
+def test_froget_working_semantic_episodic():
+    llm = LlmClient()
+    agent = SimpleAgent(name="记忆助手", llm=llm)
+
+    # 创建记忆工具
+    memory_tool = MemoryTool(user_id="user123")
+    tool_registry = ToolRegistry()
+    tool_registry.register_tool(memory_tool)
+    agent.tool_registry = tool_registry
+
+    logger.info(f"1. 基于重要性的遗忘 - 删除重要性低于阈值的记忆");
+    result = memory_tool.run({"action":"forget", "strategy": "importance_based", "threshold":0.2});
+    logger.info(f"result:{result}")
+
+    logger.info(f" 2. 基于时间的遗忘 - 删除超过指定天数的记忆");
+    result = memory_tool.run({"action":"forget", "strategy":"time_based", "max_age_days":30});
+    logger.info(f"result:{result}");
+
+    logger.info(f"3. 基于容量的遗忘 - 当记忆数量超限时删除最不重要的")
+    result = memory_tool.run({"action":"forget", "strategy":"capacity_based", "threshold":0.3})
+    logger.info(f"result:{result}")
+
+
+def test_consolidate_working_semantic_episodic():
+    llm = LlmClient()
+    agent = SimpleAgent(name="记忆助手", llm=llm)
+
+    # 创建记忆工具
+    memory_tool = MemoryTool(user_id="user123")
+    tool_registry = ToolRegistry()
+    tool_registry.register_tool(memory_tool)
+    agent.tool_registry = tool_registry
+
+    logger.info(f"1. 将重要的工作记忆转为情景记忆");
+    result = memory_tool.run({"action":"consolidate", "from_type": "working", "to_type":"episodic", "importance_threshold":0.7});
+    logger.info(f"result:{result}")
+
+    logger.info(f" 2. 将重要的情景记忆转为语义记忆");
+    result = memory_tool.run({"action":"consolidate", "from_type":"episodic", "to_type":"semantic", "importance_threshold":0.8});
+    logger.info(f"result:{result}");
+ 
+
+
+def test_rag01():
+    # 创建具有RAG能力的Agent
+    llm = LlmClient()
+    agent = SimpleAgent(name="知识助手", llm=llm)
+
+    # 创建RAG工具
+    rag_tool = RAGTool(
+        knowledge_base_path="./knowledge_base",
+        collection_name="test_collection",
+        rag_namespace="test"
+    )
+
+    tool_registry = ToolRegistry()
+    tool_registry.register_tool(rag_tool)
+    agent.tool_registry = tool_registry
+
+    # 体验RAG功能
+    # 添加第一个知识
+    # logger.info("添加第一个知识")
+    # result1 = rag_tool.run({"action":"add_text", 
+    #     "text":"Python是一种高级编程语言，由Guido van Rossum于1991年首次发布。Python的设计哲学强调代码的可读性和简洁的语法。",
+    #     "document_id":"python_intro"})
+    # logger.info(f"知识1: {result1}")
+
+    # # 添加第二个知识  
+    # logger.info("添加第二个知识")
+    # result2 = rag_tool.run({"action":"add_text",
+    #     "text":"机器学习是人工智能的一个分支，通过算法让计算机从数据中学习模式。主要包括监督学习、无监督学习和强化学习三种类型。",
+    #     "document_id":"ml_basics"})
+    # logger.info(f"知识2: {result2}")
+
+    # # 添加第三个知识
+    # logger.info("添加第三个知识")
+    # result3 = rag_tool.run({"action":"add_text",
+    #     "text":"RAG（检索增强生成）是一种结合信息检索和文本生成的AI技术。它通过检索相关知识来增强大语言模型的生成能力。",
+    #     "document_id":"rag_concept"})
+    # logger.info(f"知识3: {result3}")
+    # D:/Work/AI/agent/docs/rtc.md
+    # logger.info("添加Makdowndow")
+    # result2 = rag_tool.run({"action":"add_document",
+    #     "file_path":"D:/Work/AI/agent/docs/rtc.md",
+    #     "chunk_size":1000,
+    #     "chunk_overlap":200
+    #     })
+    # logger.info(f"知识2: {result2}")
+    logger.info("\n=== 搜索知识 ===")
+    result = rag_tool.run({"action":"search",
+        "query":"RTC",
+        "limit":3,
+        "min_score":0.1
+    })
+    logger.info(result)
+
+    logger.info("\n=== 知识库统计 ===")
+    result = rag_tool.run({"action":"stats"})
+    logger.info(result)
+
+
+
+def  test_rag_context():
+
+
+    # 1. 初始化工具
+    memory_tool = MemoryTool(user_id="user123")
+    rag_tool = RAGTool(knowledge_base_path="./knowledge_base")
+
+    # 2. 创建 ContextBuilder
+    config = ContextConfig(
+        max_tokens=3000,
+        reserve_ratio=0.2,
+        min_relevance=0.2,
+        enable_compression=True
+    )
+
+    builder = ContextBuilder(
+        memory_tool=memory_tool,
+        rag_tool=rag_tool,
+        config=config
+    )
+
+    # 3. 准备对话历史
+    conversation_history = [
+        Message(content="我正在开发一个数据分析工具", role="user", timestamp=datetime.now()),
+        Message(content="很好!数据分析工具通常需要处理大量数据。您计划使用什么技术栈?", role="assistant", timestamp=datetime.now()),
+        Message(content="我打算使用Python和Pandas,已经完成了CSV读取模块", role="user", timestamp=datetime.now()),
+        Message(content="不错的选择!Pandas在数据处理方面非常强大。接下来您可能需要考虑数据清洗和转换。", role="assistant", timestamp=datetime.now()),
+    ]
+
+    # 4. 添加一些记忆
+    memory_tool.run({
+        "action": "add",
+        "content": "用户正在开发数据分析工具,使用Python和Pandas",
+        "memory_type": "semantic",
+        "importance": 0.8
+    })
+
+    memory_tool.run({
+        "action": "add",
+        "content": "已完成CSV读取模块的开发",
+        "memory_type": "episodic",
+        "importance": 0.7
+    })
+
+    # 5. 构建上下文
+    context = builder.build(
+        user_query="如何优化Pandas的内存占用?",
+        conversation_history=conversation_history,
+        system_instructions="你是一位资深的Python数据工程顾问。你的回答需要:1) 提供具体可行的建议 2) 解释技术原理 3) 给出代码示例"
+    )
+
+    logger.info("=" * 80)
+    logger.info("构建的上下文:")
+    logger.info("=" * 80)
+    logger.info(context)
+    logger.info("=" * 80)
+
+
 if __name__ == "__main__":
+
+      # 创建具有记忆能力的Agent
+    # llm = LlmClient()
+    # agent = SimpleAgent(name="记忆助手", llm=llm)
+
+    # # 创建记忆工具
+    # memory_tool = MemoryTool(user_id="user123")
+    # tool_registry = ToolRegistry()
+    # tool_registry.register_tool(memory_tool)
+    # agent.tool_registry = tool_registry
     #test_swiatch_provider()
     # test_simaple_agent()
     #test_reflection_agent()
@@ -362,5 +606,14 @@ if __name__ == "__main__":
     #test_memory_agent()
     
 
-    test_memory_rag()
-    #test_memory_rag_v0()
+    # test_memory_rag()
+    # test_memory_rag_v0()
+
+    # 三种遗忘策略的使用：
+    #test_froget_working_semantic_episodic();
+    # test_search_working_semantic_episodic( );
+    # test_consolidate_working_semantic_episodic()
+    # test_search_working_semantic_episodic();
+    # test_rag01()
+    # 
+    test_rag_context();

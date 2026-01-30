@@ -130,7 +130,7 @@ class SQLiteDocumentStore(DocumentStore):
         
         # 创建用户表
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS users (
+            CREATE TABLE IF NOT EXISTS t_users (
                 id TEXT PRIMARY KEY,
                 name TEXT,
                 properties TEXT,
@@ -140,7 +140,7 @@ class SQLiteDocumentStore(DocumentStore):
         
         # 创建记忆表
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS memories (
+            CREATE TABLE IF NOT EXISTS t_memories (
                 id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL,
                 content TEXT NOT NULL,
@@ -150,13 +150,13 @@ class SQLiteDocumentStore(DocumentStore):
                 properties TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users (id)
+                FOREIGN KEY (user_id) REFERENCES t_users (id)
             )
         """)
         
         # 创建概念表
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS concepts (
+            CREATE TABLE IF NOT EXISTS t_concepts (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
                 description TEXT,
@@ -167,20 +167,20 @@ class SQLiteDocumentStore(DocumentStore):
         
         # 创建记忆-概念关联表
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS memory_concepts (
+            CREATE TABLE IF NOT EXISTS t_memory_concepts (
                 memory_id TEXT NOT NULL,
                 concept_id TEXT NOT NULL,
                 relevance_score REAL DEFAULT 1.0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (memory_id, concept_id),
-                FOREIGN KEY (memory_id) REFERENCES memories (id) ON DELETE CASCADE,
-                FOREIGN KEY (concept_id) REFERENCES concepts (id) ON DELETE CASCADE
+                FOREIGN KEY (memory_id) REFERENCES t_memories (id) ON DELETE CASCADE,
+                FOREIGN KEY (concept_id) REFERENCES t_concepts (id) ON DELETE CASCADE
             )
         """)
         
         # 创建概念关系表
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS concept_relationships (
+            CREATE TABLE IF NOT EXISTS t_concept_relationships (
                 from_concept_id TEXT NOT NULL,
                 to_concept_id TEXT NOT NULL,
                 relationship_type TEXT NOT NULL,
@@ -188,19 +188,19 @@ class SQLiteDocumentStore(DocumentStore):
                 properties TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (from_concept_id, to_concept_id, relationship_type),
-                FOREIGN KEY (from_concept_id) REFERENCES concepts (id) ON DELETE CASCADE,
-                FOREIGN KEY (to_concept_id) REFERENCES concepts (id) ON DELETE CASCADE
+                FOREIGN KEY (from_concept_id) REFERENCES t_concepts (id) ON DELETE CASCADE,
+                FOREIGN KEY (to_concept_id) REFERENCES t_concepts (id) ON DELETE CASCADE
             )
         """)
         
         # 创建索引
         indexes = [
-            "CREATE INDEX IF NOT EXISTS idx_memories_user_id ON memories (user_id)",
-            "CREATE INDEX IF NOT EXISTS idx_memories_type ON memories (memory_type)",
-            "CREATE INDEX IF NOT EXISTS idx_memories_timestamp ON memories (timestamp)",
-            "CREATE INDEX IF NOT EXISTS idx_memories_importance ON memories (importance)",
-            "CREATE INDEX IF NOT EXISTS idx_memory_concepts_memory ON memory_concepts (memory_id)",
-            "CREATE INDEX IF NOT EXISTS idx_memory_concepts_concept ON memory_concepts (concept_id)"
+            "CREATE INDEX IF NOT EXISTS idx_memories_user_id ON t_memories (user_id)",
+            "CREATE INDEX IF NOT EXISTS idx_memories_type ON t_memories (memory_type)",
+            "CREATE INDEX IF NOT EXISTS idx_memories_timestamp ON t_memories (timestamp)",
+            "CREATE INDEX IF NOT EXISTS idx_memories_importance ON t_memories (importance)",
+            "CREATE INDEX IF NOT EXISTS idx_memory_concepts_memory ON t_memory_concepts (memory_id)",
+            "CREATE INDEX IF NOT EXISTS idx_memory_concepts_concept ON t_memory_concepts (concept_id)"
         ]
         
         for index_sql in indexes:
@@ -224,11 +224,11 @@ class SQLiteDocumentStore(DocumentStore):
         cursor = conn.cursor()
         
         # 确保用户存在
-        cursor.execute("INSERT OR IGNORE INTO users (id, name) VALUES (?, ?)", (user_id, user_id))
+        cursor.execute("INSERT OR IGNORE INTO t_users (id, name) VALUES (?, ?)", (user_id, user_id))
         
         # 插入记忆
         cursor.execute("""
-            INSERT OR REPLACE INTO memories 
+            INSERT OR REPLACE INTO t_memories 
             (id, user_id, content, memory_type, timestamp, importance, properties, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         """, (
@@ -251,7 +251,7 @@ class SQLiteDocumentStore(DocumentStore):
         
         cursor.execute("""
             SELECT id, user_id, content, memory_type, timestamp, importance, properties, created_at
-            FROM memories
+            FROM t_memories
             WHERE id = ?
         """, (memory_id,))
         
@@ -313,7 +313,7 @@ class SQLiteDocumentStore(DocumentStore):
         
         cursor.execute(f"""
             SELECT id, user_id, content, memory_type, timestamp, importance, properties, created_at
-            FROM memories
+            FROM t_memories
             {where_clause}
             ORDER BY importance DESC, timestamp DESC
             LIMIT ?
@@ -368,7 +368,7 @@ class SQLiteDocumentStore(DocumentStore):
         params.append(memory_id)
         
         cursor.execute(f"""
-            UPDATE memories
+            UPDATE t_memories
             SET {', '.join(update_fields)}
             WHERE id = ?
         """, params)
@@ -381,7 +381,7 @@ class SQLiteDocumentStore(DocumentStore):
         conn = self._get_connection()
         cursor = conn.cursor()
         
-        cursor.execute("DELETE FROM memories WHERE id = ?", (memory_id,))
+        cursor.execute("DELETE FROM t_memories WHERE id = ?", (memory_id,))
         deleted_count = cursor.rowcount
         
         conn.commit()
@@ -395,7 +395,7 @@ class SQLiteDocumentStore(DocumentStore):
         stats = {}
         
         # 统计各表的记录数
-        tables = ["users", "memories", "concepts", "memory_concepts", "concept_relationships"]
+        tables = ["t_users", "t_memories", "t_concepts", "t_memory_concepts", "t_concept_relationships"]
         for table in tables:
             cursor.execute(f"SELECT COUNT(*) as count FROM {table}")
             stats[f"{table}_count"] = cursor.fetchone()["count"]
@@ -403,7 +403,7 @@ class SQLiteDocumentStore(DocumentStore):
         # 统计记忆类型分布
         cursor.execute("""
             SELECT memory_type, COUNT(*) as count
-            FROM memories
+            FROM t_memories
             GROUP BY memory_type
         """)
         memory_types = {}
@@ -414,7 +414,7 @@ class SQLiteDocumentStore(DocumentStore):
         # 统计用户分布
         cursor.execute("""
             SELECT user_id, COUNT(*) as count
-            FROM memories
+            FROM t_memories
             GROUP BY user_id
             ORDER BY count DESC
             LIMIT 10

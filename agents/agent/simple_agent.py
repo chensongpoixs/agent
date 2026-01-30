@@ -39,6 +39,7 @@ class SimpleAgent(Agent):
 
         # 添加系统信息（可能）
         enhanced_system_prompt = self._get_enhanced_system_prompt();
+        # logger.info(f"enhanced_system_prompt:{enhanced_system_prompt}")
         messages.append({"role": "system", "content": enhanced_system_prompt});
 
 
@@ -76,15 +77,39 @@ class SimpleAgent(Agent):
         if not tools_description or tools_description == "暂无可用工具":
             return base_prompt
 
+        # tools_section = "\n\n## 可用工具\n"
+        # tools_section += "你可以使用以下工具来帮助回答问题:\n"
+        # tools_section += tools_description + "\n"
+
+        # tools_section += "\n## 工具调用格式\n"
+        # tools_section += "当需要使用工具时，请使用以下格式:\n"
+        # tools_section += "`[TOOL_CALL:{tool_name}:{parameters}]`\n"
+        # tools_section += "例如:`[TOOL_CALL:search:Python编程]` 或 `[TOOL_CALL:memory:recall=用户信息]`\n\n"
+        # tools_section += "工具调用结果会自动插入到对话中，然后你可以基于结果继续回答。\n"
+        #################
+
         tools_section = "\n\n## 可用工具\n"
-        tools_section += "你可以使用以下工具来帮助回答问题:\n"
+        tools_section += "你可以使用以下工具来帮助回答问题：\n"
         tools_section += tools_description + "\n"
 
         tools_section += "\n## 工具调用格式\n"
-        tools_section += "当需要使用工具时，请使用以下格式:\n"
-        tools_section += "`[TOOL_CALL:{tool_name}:{parameters}]`\n"
-        tools_section += "例如:`[TOOL_CALL:search:Python编程]` 或 `[TOOL_CALL:memory:recall=用户信息]`\n\n"
-        tools_section += "工具调用结果会自动插入到对话中，然后你可以基于结果继续回答。\n"
+        tools_section += "当需要使用工具时，请使用以下格式：\n"
+        tools_section += "`[TOOL_CALL:{tool_name}:{parameters}]`\n\n"
+
+        tools_section += "### 参数格式说明\n"
+        tools_section += "1. **多个参数**：使用 `key=value` 格式，用逗号分隔\n"
+        tools_section += "   示例：`[TOOL_CALL:calculator:a=12,b=8]`\n"
+        tools_section += "   示例：`[TOOL_CALL:rag:action=add, path=README.md]`\n\n"
+        tools_section += "2. **单个参数**：直接使用 `key=value`\n"
+        tools_section += "   示例：`[TOOL_CALL:memory:action=search,content=Python编程]`\n\n"
+        tools_section += "3. **简单查询**：可以直接传入文本\n"
+        tools_section += "   示例：`[TOOL_CALL:memory:action=add,content=Python编程]`\n\n"
+
+        tools_section += "### 重要提示\n"
+        tools_section += "- 参数名必须与工具定义的参数名完全匹配\n"
+        tools_section += "- 数字参数直接写数字，不需要引号：`a=12` 而不是 `a=\"12\"`\n"
+        tools_section += "- 文件路径等字符串参数直接写：`path=README.md`\n"
+        tools_section += "- 工具调用结果会自动插入到对话中，然后你可以基于结果继续回答\n"
 
         return base_prompt + tools_section
     
@@ -169,6 +194,7 @@ class SimpleAgent(Agent):
         if not self.tool_registry:
             return f"❌ 错误:未配置工具注册表";
         try:
+            logger.info(f"tool_name:{tool_name}, parameters:{parameters}");
             # 智能参数解析
             if tool_name == 'calculator':
                 # 计算器工具之间转入表达式
@@ -176,18 +202,44 @@ class SimpleAgent(Agent):
             else:
                 # 其他工具使用智能参数解析
                 param_dict = self._parse_tool_parameters(tool_name=tool_name, parameters=parameters);
+                
                 tool = self.tool_registry.get_tool(tool_name);
                 if not tool:
+                    logger.warning(f"❌ 错误:未找到工具 tool_name:{tool_name}, parameters:{parameters}");
                     return f"❌ 错误:未找到工具 '{tool_name}'"
                 result = tool.run(param_dict)
 
             return f"🔧 工具 {tool_name} 执行结果:\n{result}"
 
         except Exception as e:
+            logger.warning(f"❌ tool_name:{tool_name}, parameters:{parameters}, 工具 调用失败 :{str(e)}");
             return f"❌ 工具调用失败:{str(e)}"
 
 
 
+    # 修复字符串转float类型错误问题 出现了“can’t multiply sequence by non-int of type 'float'”的错误。
+    def _parse_value(self, value: str):
+        value = value.strip()
+
+        # bool
+        if value.lower() in ("true", "false"):
+            return value.lower() == "true"
+
+        # int
+        try:
+            if "." not in value:
+                return int(value)
+        except ValueError:
+            pass
+
+        # float
+        try:
+            return float(value)
+        except ValueError:
+            pass
+
+        # fallback: string
+        return value
     """
     智能解析工具参数
 
@@ -204,11 +256,12 @@ class SimpleAgent(Agent):
                 for pair in pairs:
                     if '=' in pair:
                         key, value = pair.split('=', 1);
-                    param_dict[key.strip()] = value.strip();
+                    # 出现了“can’t multiply sequence by non-int of type 'float'”的错误。
+                    param_dict[key.strip()] = self._parse_value(value.strip());
             else:
                 # 单个参数：key=value
                 key, value = parameters.split('=', 1);
-                param_dict[key.strip()] = value.strip();
+                param_dict[key.strip()] = self._parse_value(value);
 
         else:
             # 直接转入参数， 根据工具类型智能推断

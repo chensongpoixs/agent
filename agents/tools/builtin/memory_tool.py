@@ -29,6 +29,12 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 from ..base import Tool, ToolParameter, tool_action
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 # from ...memory import MemoryManager, MemoryConfig
 
 # """记忆工具 - 为Agent提供记忆功能"""
@@ -114,6 +120,7 @@ class MemoryTool(Tool):
             执行结果字符串
         """
         if not self.validate_parameters(parameters):
+            logger.warning(f"❌ 参数验证失败：缺少必需的参数 parameters:{parameters}")
             return "❌ 参数验证失败：缺少必需的参数"
 
         action = parameters.get("action")
@@ -179,17 +186,17 @@ class MemoryTool(Tool):
             ToolParameter(name="content", type="string", description="记忆内容（add/update时可用；感知记忆可作描述）", required=False),
             ToolParameter(name="query", type="string", description="搜索查询（search时可用）", required=False),
             ToolParameter(name="memory_type", type="string", description="记忆类型：working, episodic, semantic, perceptual（默认：working）", required=False, default="working"),
-            ToolParameter(name="importance", type="number", description="重要性分数，0.0-1.0（add/update时可用）", required=False),
+            ToolParameter(name="importance", type="float", description="重要性分数，0.0-1.0（add/update时可用）", required=False),
             ToolParameter(name="limit", type="integer", description="搜索结果数量限制（默认：5）", required=False, default=5),
             ToolParameter(name="memory_id", type="string", description="目标记忆ID（update/remove时必需）", required=False),
             ToolParameter(name="file_path", type="string", description="感知记忆：本地文件路径（image/audio）", required=False),
             ToolParameter(name="modality", type="string", description="感知记忆模态：text/image/audio（不传则按扩展名推断）", required=False),
             ToolParameter(name="strategy", type="string", description="遗忘策略：importance_based/time_based/capacity_based（forget时可用）", required=False, default="importance_based"),
-            ToolParameter(name="threshold", type="number", description="遗忘阈值（forget时可用，默认0.1）", required=False, default=0.1),
+            ToolParameter(name="threshold", type="float", description="遗忘阈值（forget时可用，默认0.1）", required=False, default=0.1),
             ToolParameter(name="max_age_days", type="integer", description="最大保留天数（forget策略为time_based时可用）", required=False, default=30),
             ToolParameter(name="from_type", type="string", description="整合来源类型（consolidate时可用，默认working）", required=False, default="working"),
             ToolParameter(name="to_type", type="string", description="整合目标类型（consolidate时可用，默认episodic）", required=False, default="episodic"),
-            ToolParameter(name="importance_threshold", type="number", description="整合重要性阈值（默认0.7）", required=False, default=0.7),
+            ToolParameter(name="importance_threshold", type="float", description="整合重要性阈值（默认0.7）", required=False, default=0.7),
         ]
 
     @tool_action("memory_add", "添加新记忆到记忆系统中")

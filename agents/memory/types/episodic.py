@@ -21,28 +21,66 @@ from ..base import BaseMemory, MemoryItem, MemoryConfig
 from ..storage import SQLiteDocumentStore, QdrantVectorStore
 from ..embedding import get_text_embedder, get_dimension
 
+"""情景记忆中的单个情景。
+
+Attributes:
+- episode_id (str): 情景的全局唯一标识符，通常使用 `MemoryItem.id`。
+    在数据库与向量索引中作为主键，用于检索、更新与删除操作。
+- user_id (str): 与该情景相关的用户标识（例如用户账号、设备ID等）。
+    用于按用户范围过滤与个性化检索。
+- session_id (str): 会话标识，将多条情景聚合为一次交互会话（例如一次对话或任务）。
+    便于按会话查看时间线或回溯整个交互上下文。
+- timestamp (datetime): 情景发生时间，使用 `datetime` 对象表示，精确到秒。
+    用于按时间排序、计算新近性、和基于时间的遗忘策略。
+- content (str): 情景的文本内容，例如用户输入、系统回应或事件描述。
+    该字段也用于生成文本嵌入以进行语义检索。
+- context (Dict[str, Any]): 可扩展的上下文字典，用于存放额外元数据，如意图、实体、来源、
+    发生环境、是否已遗忘标记（例如 {"forgotten": True}）等。该字段应保持可序列化。
+- outcome (Optional[str]): 可选的结果或简短结论（例如"成功"、"失败"、操作结果摘要）。
+    便于快速汇总、统计或在时间线中展示事件结果。
+- importance (float): 重要性评分，通常在 0.0 到 1.0 之间。用于遗忘策略、检索排序与聚合分析。
+    较高的值表示该情景对长期记忆更重要，应优先保留与检索。
+
+Note:
+- 该类尽量保持轻量，仅保存必要的字段以便内存缓存与快速过滤；权威持久化信息保存在 SQLite。
+"""
 class Episode:
-    """情景记忆中的单个情景"""
-    
-    def __init__(
-        self,
-        episode_id: str,
-        user_id: str,
-        session_id: str,
-        timestamp: datetime,
-        content: str,
-        context: Dict[str, Any],
-        outcome: Optional[str] = None,
-        importance: float = 0.5
-    ):
-        self.episode_id = episode_id
-        self.user_id = user_id
-        self.session_id = session_id
-        self.timestamp = timestamp
-        self.content = content
-        self.context = context
-        self.outcome = outcome
-        self.importance = importance
+
+
+        def __init__(
+                self,
+                episode_id: str,
+                user_id: str,
+                session_id: str,
+                timestamp: datetime,
+                content: str,
+                context: Dict[str, Any],
+                outcome: Optional[str] = None,
+                importance: float = 0.5
+        ):
+                # 全局唯一 ID，用于索引和跨存储关联
+                self.episode_id: str = episode_id
+
+                # 所属用户 ID，用于按用户过滤
+                self.user_id: str = user_id
+
+                # 会话 ID，将多个情景关联为一次交互
+                self.session_id: str = session_id
+
+                # 事件发生时间，datetime 类型
+                self.timestamp: datetime = timestamp
+
+                # 事件文本内容（用于展示与向量化）
+                self.content: str = content
+
+                # 扩展上下文字典（可包含任意可序列化元数据）
+                self.context: Dict[str, Any] = context
+
+                # 事件结果/输出（可选），有助于汇总和回溯
+                self.outcome: Optional[str] = outcome
+
+                # 重要性评分（0.0 - 1.0），用于遗忘与检索加权
+                self.importance: float = importance
 
 class EpisodicMemory(BaseMemory):
     """情景记忆实现

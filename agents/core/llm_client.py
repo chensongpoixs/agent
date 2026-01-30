@@ -364,6 +364,7 @@ class LlmClient:
         适用于不需要流式输出的场景。
         """
         logger.info(f"🧠 正在调用 {self.model} 模型...")
+        # logger.info(f"system:{messages[0].get("system")}");
         try:
             response = self._client.chat.completions.create(
                 model=self.model,

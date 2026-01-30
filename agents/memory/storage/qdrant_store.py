@@ -36,7 +36,7 @@ class QdrantConnectionManager:
         cls, 
         url: Optional[str] = None,
         api_key: Optional[str] = None,
-        collection_name: str = "hello_agents_vectors",
+        collection_name: str = "agents_vectors",
         vector_size: int = 384,
         distance: str = "cosine",
         timeout: int = 30,
@@ -68,13 +68,51 @@ class QdrantConnectionManager:
         return cls._instances[key]
 
 class QdrantVectorStore:
-    """Qdrant向量数据库存储实现"""
+    """Qdrant向量数据库存储实现
+
+    调用与行为概览：
+    1. 初始化
+       - `__init__` -> `_initialize_client` -> `_ensure_collection` -> `_ensure_payload_indexes`
+    2. 添加向量
+       - `add_vectors` -> `client.upsert`
+    3. 搜索向量
+       - `search_similar` -> `client.query_points` / `client.search` -> 结果处理
+    4. 删除单个/多条向量
+       - `delete_vectors` -> `client.delete`
+    5. 按 memory_id 删除记忆（payload 过滤）
+       - `delete_memories` -> `client.delete` (使用 FilterSelector)
+    6. 清空集合
+       - `clear_collection` -> `client.delete_collection` -> `_ensure_collection`
+
+    简要流程图 (ASCII):
+
+        [应用启动]
+             |
+             v
+        QdrantVectorStore.__init__
+             |
+             v
+    _initialize_client ---> _ensure_collection ---> _ensure_payload_indexes
+
+    写入: add_vectors ---> client.upsert ---> 返回 True/False
+    检索: search_similar ---> client.query_points/search ---> 处理 hits ---> 返回结果列表
+    删除: delete_vectors/delete_memories ---> client.delete
+
+    使用示例顺序:
+    - 应用启动时创建实例以准备集合与索引
+    - 运行时调用 `add_vectors` 写入向量
+    - 查询时调用 `search_similar` 获取相似向量
+
+    注意:
+    - 本类对不同版本的 `qdrant-client` 做了兼容处理（`query_points` vs `search`）。
+    - 写入时会对 metadata 添加时间戳并规范化 ID 类型。
+    """
     
     def __init__(
         self, 
         url: Optional[str] = None,
         api_key: Optional[str] = None,
-        collection_name: str = "hello_agents_vectors",
+        collection_name: str = "agents_vectors",
         vector_size: int = 384,
         distance: str = "cosine",
         timeout: int = 30,
@@ -101,6 +139,12 @@ class QdrantVectorStore:
         self.collection_name = collection_name
         self.vector_size = vector_size
         self.timeout = timeout
+        # 配置与连接控制
+        # `url` (Optional[str]): Qdrant 服务地址或云端 URL，None 表示使用本地 host:port
+        # `api_key` (Optional[str]): 如果使用 Qdrant 云服务需要提供 API key
+        # `collection_name` (str): 向量集合名称，用作逻辑隔离与索引定位
+        # `vector_size` (int): 向量维度，必须与嵌入模型输出一致
+        # `timeout` (int): 客户端请求超时时间（秒）
         # HNSW/Query params via env
         try:
             self.hnsw_m = int(os.getenv("QDRANT_HNSW_M", "32"))
@@ -126,6 +170,8 @@ class QdrantVectorStore:
         
         # 初始化客户端
         self.client = None
+        # `client` (Optional[QdrantClient]): qdrant-client 的实例，
+        # 存在时用于执行 upsert/search/delete 等操作；在初始化失败时为 None。
         self._initialize_client()
         
     def _initialize_client(self):
@@ -522,7 +568,7 @@ class QdrantVectorStore:
             return info
             
         except Exception as e:
-            logger.error(f"❌ 获取集合信息失败: {e}")
+            logger.error(f"❌ collection_name:{self.collection_name}获取集合信息失败: {e}")
             return {}
     
     def get_collection_stats(self) -> Dict[str, Any]:
